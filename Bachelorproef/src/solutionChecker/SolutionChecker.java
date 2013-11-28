@@ -45,6 +45,8 @@ public class SolutionChecker {
 				kaka = false;
 				break;
 			}
+					
+			// constraint 5
 		}
 		return kaka;		
 	}
@@ -64,6 +66,32 @@ public class SolutionChecker {
 				b = false;
 				break;
 			}	
+		}
+		return b;
+	}
+	
+	/**
+	 * Controleer of in de gegeven teams aan constraint 5 voldaan is.
+	 * 
+	 * @param	teams
+	 * @param	p2
+	 */
+	public static boolean checkC5(ArrayList<Integer> teams, int p2) {
+		boolean b = true;
+		for(int i=0; i<=teams.size()-1-(2*p2); i++) {
+			if(i%2==0) {
+				List<Integer> sublist = teams.subList(i+2, (i+2)+2*(p2-1));
+				if(sublist.contains(teams.get(i))) {
+					b = false;
+					break;
+				}
+			} else {
+				List<Integer> sublist = teams.subList(i+1, (i+1)+2*(p2-1));
+				if(sublist.contains(teams.get(i))) {
+					b = false;
+					break;
+				}
+			}
 		}
 		return b;
 	}
