@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map.Entry;
 
 
@@ -55,21 +56,14 @@ public class SolutionChecker {
 	 * @param	p1
 	 */
 	public static boolean checkC4(ArrayList<Integer> teams, int p1) {
+		
 		boolean b = true;
-		int current = teams.get(0);
-		int counter = 1;
-		teams.remove(0);
-		for(int i: teams) {
-			if(i == current) {
-				counter++;
-				if(counter > p1) {
-					b = false;
-					break;
-				}
-			} else {
-				counter = 1;
-				current = i;
-			}
+		for(int i=0; i<=teams.size()-p1;i++) {
+			List<Integer> sublist = teams.subList(i+1, i+p1);
+			if(sublist.contains(teams.get(i))) {
+				b = false;
+				break;
+			}	
 		}
 		return b;
 	}
