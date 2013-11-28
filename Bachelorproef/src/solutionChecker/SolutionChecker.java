@@ -33,8 +33,20 @@ public class SolutionChecker {
 				visitedTeams.add(game[0]);
 			}
 			
+			ArrayList<Integer> arrayTeams = new ArrayList<Integer>();
+			for(int[] game: current.getValue()) {
+				arrayTeams.add(game[0]);
+				arrayTeams.add(game[1]);
+			}
+			
 			// constraint 4
 			if(!checkC4(visitedTeams,p1)) {
+				kaka = false;
+				break;
+			}
+			
+			// constraint 5
+			if(!checkC5(arrayTeams,p2)) {
 				kaka = false;
 				break;
 			}
@@ -46,7 +58,6 @@ public class SolutionChecker {
 				break;
 			}
 					
-			// constraint 5
 		}
 		return kaka;		
 	}
