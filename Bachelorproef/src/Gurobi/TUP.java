@@ -14,47 +14,28 @@ public class TUP {
 	 */
 	public static void main(String[] args) throws IOException {
 		try {		
-			// Problem Data
-//			int n = 4;
-//			int amSlots = 4*n-2;
-//			int amTeams = 2*n;
-//			double slots[] = new double[amSlots];
-//			for(int i=0; i<amSlots; ++i) {
-//				slots[i] = i;
-//			}
-//			double teams[] = new double[amTeams];
-//			for(int i=0; i<amSlots; ++i) {
-//				teams[i] = i;
-//			}
+			// ----------------------------------
+			// ---------- KIES DATASET ----------
+			// ----------------------------------
+//			String dataset = "4"; // Opl: 5176
+//			String dataset = "6"; // Opl: 14077
+//			String dataset = "6a"; // Opl: 15457
+//			String dataset = "6b"; // Opl: 16716
+//			String dataset = "6c"; // Opl: 14396
+//			String dataset = "8"; // Opl: 34311
+//			String dataset = "8a"; // Opl: 31490  
+//			String dataset = "8b"; // Opl: 32731 
+//			String dataset = "8c"; // Opl: 29879 
+//			String dataset = "10"; // Opl: 48942
+			
 			Datareader dr = new Datareader();
-			dr.getData("D:\\Dropbox\\School\\bachelorproef\\datasets\\umps4.txt");
+			dr.getData("D:\\Dropbox\\School\\bachelorproef\\datasets\\umps"+dataset+".txt");
 			int[][] dist = dr.getDist();
 			int[][] opp = dr.getOpp();
 			double n = dist.length/2;
 			double amountTeams = dist[0].length;
 			double amountSlots = 2*amountTeams-2;
-			
-			// Data voor n = 2
-//			double n = 2;
-//			double[] slots = {0,1,2,3,4,5};
-//			double[] teams = {0,1,2,3};
-//			double[] umps = {0,1};
-//			double[][] opp = {
-//						{3,4,-1,-2},
-//						{2,-1,4,-3},
-//						{4,-3,2,-1},
-//						{-3,-4,1,2},
-//						{-2,1,-4,3},
-//						{-4,3,-2,1}
-//						};
-//			
-//			double[][] dist = {
-//					{0,745,665,929},
-//					{745,0,80,337},
-//					{665,80,0,380},
-//					{929,337,380,0},
-//					};
-			
+						
 			// Parameters
 			double d1 = 0;
 			double d2 = 0;
@@ -145,7 +126,7 @@ public class TUP {
 				}
 			}
 			
-			// 5
+			// 5 (works)
 			for(int i=0; i<amountTeams;++i){
 				for(int u=0; u<n; ++u) {
 					for(int s=0; s<amountSlots-n1; ++s) {
@@ -160,7 +141,7 @@ public class TUP {
 				}
 			}
 			
-			// 6 WERKT NIET, UITZOEKEN WAAROM
+			// 6 (works)
 			for(int i=0; i<amountTeams;++i){
 				for(int u=0; u<n; ++u) {
 					for(int s=0; s<amountSlots-n2; ++s) {
@@ -168,11 +149,14 @@ public class TUP {
 						for(int c=s; c<=s+n2;++c) {
 							d5tot.addTerm(1.0,x[i][c][u]);
 							for(int j=0; j<amountTeams; ++j) {
-								if(opp[c][j] == i) {
+								System.out.println("i: "+i+" u: "+u+" s: "+s+" c: "+c+" j: "+j);
+								if(opp[c][j] == i+1) {
+									System.out.println("team "+(j+1)+" speelt op slot "+(c+1)+" tegen "+i);
 									d5tot.addTerm(1.0,x[j][c][u]);
 								}
 							}
 						}
+						System.out.println("-----------");
 						model.addConstr(d5tot, GRB.LESS_EQUAL, 1, "B5_x"+i+s+u);
 					}
 				}
@@ -209,17 +193,21 @@ public class TUP {
             GRBVar[][][][] z) throws GRBException {
 		if (model.get(GRB.IntAttr.Status) == GRB.Status.OPTIMAL) {
 			System.out.println("\nCost: " + model.get(GRB.DoubleAttr.ObjVal));
-			System.out.println("\nX:");
-			for (int i = 0; i < x.length; ++i) {
-				for(int s = 0; s<x[0].length; ++s) {
-					for(int u = 0; u<x[0][0].length; ++u) {
-						//if (x[i][s][c].get(GRB.DoubleAttr.X) > 0.0001) {
-							System.out.println(x[i][s][u].get(GRB.StringAttr.VarName) + " " +
-									x[i][s][u].get(GRB.DoubleAttr.X));
-						//}
-					}
-				}
-			}
+			
+			// Print waardes voor de x'en
+//			System.out.println("\nX:");
+//			for (int i = 0; i < x.length; ++i) {
+//				for(int s = 0; s<x[0].length; ++s) {
+//					for(int u = 0; u<x[0][0].length; ++u) {
+//						//if (x[i][s][c].get(GRB.DoubleAttr.X) > 0.0001) {
+//							System.out.println(x[i][s][u].get(GRB.StringAttr.VarName) + " " +
+//									x[i][s][u].get(GRB.DoubleAttr.X));
+//						//}
+//					}
+//				}
+//			}
+			
+			// Print waardes voor alle z
 //			System.out.println("\nZ:");
 //			for (int i = 0; i < z.length; ++i) {
 //				for(int j = 0; j< z[0].length; ++j) {
