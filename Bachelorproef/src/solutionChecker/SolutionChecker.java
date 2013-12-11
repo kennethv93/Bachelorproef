@@ -53,7 +53,7 @@ public class SolutionChecker {
 			
 			// constraint 3
 			Collections.sort(visitedTeams);
-			if(!visitedTeams.containsAll(teams)) {
+			if(!checkC3(visitedTeams,teams)) {
 				kaka = false;
 				break;
 			}
@@ -61,6 +61,19 @@ public class SolutionChecker {
 		}
 		return kaka;		
 	}
+	
+	/**
+	 * Controleer of in de gegeven teams aan de constraint 3 voldaan is.
+	 * 
+	 * @param visitedTeams
+	 * @param allTeams
+	 * @return
+	 */
+	public static boolean checkC3(ArrayList<Integer> visitedTeams, ArrayList<Integer> allTeams) {
+		Collections.sort(visitedTeams);
+		return visitedTeams.containsAll(allTeams);
+	}
+	
 	
 	/**
 	 * Controleer of in de gegeven teams aan constraint 4 voldaan is.
