@@ -32,17 +32,17 @@ public class TUP {
 //		String dataset = "10b"; // Opl: 45609
 //		String dataset = "10c"; // Opl: 43149
 
-		execute(dataset);
+//		execute(dataset); "4", "6", "6a", "6b", "6c", "8", "8a", "8b", "8c", "10", "10a", "10b", "10c","12","14","14a","14b","14c", "16", "16a", "16b", "16c", "18", "20", "22", 
 		
 		// Test allemaal
-//		String[] datasets = {"4", "6", "6a", "6b", "6c", "8", "8a", "8b", "8c", "10", "10a", "10b", "10c","12","14","14a","14b","14c"};
-//		for(String s: datasets) {
-//			execute(s);
-//			for(int i=0; i<100; i++) {
-//				System.out.print("-");
-//			}
-//			System.out.println();
-//		}
+		String[] datasets = {"24","26","28","30","32"};
+		for(String s: datasets) {
+			execute(s);
+			for(int i=0; i<120; i++) {
+				System.out.print("-");
+			}
+			System.out.println();
+		}
 	}
 	
 	public static void execute(String dataset) throws IOException {
@@ -130,17 +130,17 @@ public class TUP {
 			}
 			
 			// Constraint 3 (works)
-			for(int s=0; s<amountSlots;++s){
-				for(int u=0; u<n; ++u) {
-					GRBLinExpr d2tot = new GRBLinExpr();
-					for(int i=0; i<amountTeams; ++i) {
-						if(opp[s][i] > 0) {
-							d2tot.addTerm(1.0,x[i][s][u]);
-						}
-					}
-					model.addConstr(d2tot, GRB.EQUAL, 1, "C3_x"+s+u);
-				}
-			}
+//			for(int s=0; s<amountSlots;++s){
+//				for(int u=0; u<n; ++u) {
+//					GRBLinExpr d2tot = new GRBLinExpr();
+//					for(int i=0; i<amountTeams; ++i) {
+//						if(opp[s][i] > 0) {
+//							d2tot.addTerm(1.0,x[i][s][u]);
+//						}
+//					}
+//					model.addConstr(d2tot, GRB.EQUAL, 1, "C3_x"+s+u);
+//				}
+//			}
 			
 			// Constraint 4 (works)
 			for(int i=0; i<amountTeams;++i){
@@ -192,19 +192,19 @@ public class TUP {
 			}
 			
 			// Constraint 7 (works)
-			for(int i=0; i<amountTeams; ++i) {
-				for(int j=0; j<amountTeams; ++j) {
-					for(int u=0; u<n; ++u) {
-						for(int s=0; s<amountSlots-1; ++s) {
-							GRBLinExpr d6tot = new GRBLinExpr();
-							d6tot.addTerm(1.0, x[i][s][u]);
-							d6tot.addTerm(1.0, x[j][s+1][u]);
-							d6tot.addTerm(-1.0, z[i][j][s][u]);
-							model.addConstr(d6tot, GRB.LESS_EQUAL, 1, "C7"+i+j+u+s);
-						}
-					}
-				}
-			}
+//			for(int i=0; i<amountTeams; ++i) {
+//				for(int j=0; j<amountTeams; ++j) {
+//					for(int u=0; u<n; ++u) {
+//						for(int s=0; s<amountSlots-1; ++s) {
+//							GRBLinExpr d6tot = new GRBLinExpr();
+//							d6tot.addTerm(1.0, x[i][s][u]);
+//							d6tot.addTerm(1.0, x[j][s+1][u]);
+//							d6tot.addTerm(-1.0, z[i][j][s][u]);
+//							model.addConstr(d6tot, GRB.LESS_EQUAL, 1, "C7"+i+j+u+s);
+//						}
+//					}
+//				}
+//			}
 			
 			// Constraint 10
 			for(int i=0; i<amountTeams; i++) {
@@ -220,32 +220,32 @@ public class TUP {
 			}
 			
 			// Constraint 11
-			for(int i=0; i<amountTeams; i++) {
-				for(int j=0; j<amountTeams; j++) {
-					for(int u=0; u<n; u++) {
-						for(int s=0; s<amountSlots-1; s++) {
-							GRBLinExpr d11tot = new GRBLinExpr();
-							d11tot.addTerm(1.0, z[i][j][s][u]);
-							d11tot.addTerm(-1.0, x[i][s][u]);
-							model.addConstr(d11tot, GRB.LESS_EQUAL, 0, "C11_x"+i+j+u+s);
-						}
-					}
-				}
-			}
+//			for(int i=0; i<amountTeams; i++) {
+//				for(int j=0; j<amountTeams; j++) {
+//					for(int u=0; u<n; u++) {
+//						for(int s=0; s<amountSlots-1; s++) {
+//							GRBLinExpr d11tot = new GRBLinExpr();
+//							d11tot.addTerm(1.0, z[i][j][s][u]);
+//							d11tot.addTerm(-1.0, x[i][s][u]);
+//							model.addConstr(d11tot, GRB.LESS_EQUAL, 0, "C11_x"+i+j+u+s);
+//						}
+//					}
+//				}
+//			}
 			
 			// Constraint 12
-			for(int i=0; i<amountTeams; i++) {
-				for(int j=0; j<amountTeams; j++) {
-					for(int u=0; u<n; u++) {
-						for(int s=0; s<amountSlots-1; s++) {
-							GRBLinExpr d12tot = new GRBLinExpr();
-							d12tot.addTerm(1.0, z[i][j][s][u]);
-							d12tot.addTerm(-1.0, x[j][s+1][u]);
-							model.addConstr(d12tot, GRB.LESS_EQUAL, 0, "C12_x"+i+j+u+s);
-						}
-					}
-				}
-			}
+//			for(int i=0; i<amountTeams; i++) {
+//				for(int j=0; j<amountTeams; j++) {
+//					for(int u=0; u<n; u++) {
+//						for(int s=0; s<amountSlots-1; s++) {
+//							GRBLinExpr d12tot = new GRBLinExpr();
+//							d12tot.addTerm(1.0, z[i][j][s][u]);
+//							d12tot.addTerm(-1.0, x[j][s+1][u]);
+//							model.addConstr(d12tot, GRB.LESS_EQUAL, 0, "C12_x"+i+j+u+s);
+//						}
+//					}
+//				}
+//			}
 			
 			// Constraint 13
 			for(int i=0; i<amountTeams; i++) {
@@ -264,17 +264,17 @@ public class TUP {
 			}
 			
 			// Constraint 14
-			for(int u=0; u<n; u++) {
-				for(int s=0; s<amountSlots-1; s++) {
-					GRBLinExpr d14tot = new GRBLinExpr();
-					for(int i=0; i<amountTeams; i++) {
-						for(int j=0; j<amountTeams; j++) {
-							d14tot.addTerm(1.0, z[i][j][s][u]);
-						}
-					}
-					model.addConstr(d14tot, GRB.EQUAL, 1, "C14_x"+u+s);
-				}
-			}
+//			for(int u=0; u<n; u++) {
+//				for(int s=0; s<amountSlots-1; s++) {
+//					GRBLinExpr d14tot = new GRBLinExpr();
+//					for(int i=0; i<amountTeams; i++) {
+//						for(int j=0; j<amountTeams; j++) {
+//							d14tot.addTerm(1.0, z[i][j][s][u]);
+//						}
+//					}
+//					model.addConstr(d14tot, GRB.EQUAL, 1, "C14_x"+u+s);
+//				}
+//			}
 			
 			/*
 			 * Constraints stronger formulation
@@ -301,58 +301,59 @@ public class TUP {
 				model.addConstr(d15tot, GRB.EQUAL, 1, "C15"+v[0]+v[1]);
 			}
 			
-//			// Constraint 16
-//			for(int i=0; i<amountTeams; i++) {
-//				for(int u=0; u<n; u++) {
-//					GRBLinExpr d16tot = new GRBLinExpr();
-//					for(int j=0; j<amountTeams; j++) {
-//						d16tot.addTerm(1.0, z[i][j][0][u]);
-//					}
-//					model.addConstr(x[i][0][u], GRB.EQUAL, d16tot, "C16"+i+u);
-//				}
-//			}
-//			
-//			// Constraint 17
-//			for(int i=0; i<amountTeams; i++) {
-//				for(int u=0; u<n; u++) {
-//					for(int s=1; s<amountSlots; s++) {
-//						GRBLinExpr d16tot = new GRBLinExpr();
-//						for(int j=0; j<amountTeams; j++) {
-//							d16tot.addTerm(1.0, z[j][i][s-1][u]);
-//						}
-//						model.addConstr(x[i][s][u], GRB.EQUAL, d16tot, "C16"+i+u);
-//					}
-//				}
-//			}
-//			
-//			// Constraint 22
-//			if(d1 < n-1) {
-//				for(int i=0; i<amountTeams; i++) {
-//					for(int u=0; u<n; u++) {
-//						for(int s=0; s<amountSlots - 1; s++) {
-//							GRBLinExpr d22tot = new GRBLinExpr();
-//							d22tot.addTerm(1.0, z[i][i][s][u]);
-//							model.addConstr(d22tot, GRB.EQUAL, 0, "C22"+i+u+s);
-//						}
-//					}
-//				}
-//			}
-//			
-//			// Constraint 23
-//			for(int i=0; i<amountTeams; i++) {
-//				for(int j=0; j<amountTeams; j++) {
-//					if(i==j) break;
-//					for(int u=0; u<n; u++) {
-//						for(int s=0; s<amountSlots-1; s++) {
-//							if((d2<n2) && (opp[s][i] == opp[s+1][j] || opp[s][i] == j+1 || opp[s+1][j] == i+1)) {
-//								GRBLinExpr d23tot = new GRBLinExpr();
-//								d23tot.addTerm(1.0, z[i][j][s][u]);
-//								model.addConstr(d23tot, GRB.EQUAL, 0, "C23"+i+j+u+s);
-//							}
-//						}
-//					}
-//				}
-//			}
+			// Constraint 16
+			for(int i=0; i<amountTeams; i++) {
+				for(int u=0; u<n; u++) {
+					GRBLinExpr d16tot = new GRBLinExpr();
+					for(int j=0; j<amountTeams; j++) {
+						d16tot.addTerm(1.0, z[i][j][0][u]);
+					}
+					model.addConstr(x[i][0][u], GRB.EQUAL, d16tot, "C16"+i+u);
+				}
+			}
+			
+			// Constraint 17
+			for(int i=0; i<amountTeams; i++) {
+				for(int u=0; u<n; u++) {
+					for(int s=1; s<amountSlots; s++) {
+						GRBLinExpr d16tot = new GRBLinExpr();
+						for(int j=0; j<amountTeams; j++) {
+							d16tot.addTerm(1.0, z[j][i][s-1][u]);
+						}
+						model.addConstr(x[i][s][u], GRB.EQUAL, d16tot, "C16"+i+u);
+					}
+				}
+			}
+			
+			// Constraint 22
+			if(d1 < n-1) {
+				for(int i=0; i<amountTeams; i++) {
+					for(int u=0; u<n; u++) {
+						for(int s=0; s<amountSlots - 1; s++) {
+							GRBLinExpr d22tot = new GRBLinExpr();
+							d22tot.addTerm(1.0, z[i][i][s][u]);
+							model.addConstr(d22tot, GRB.EQUAL, 0, "C22"+i+u+s);
+						}
+					}
+				}
+			}
+			
+			// Constraint 23
+			for(int i=0; i<amountTeams; i++) {
+				for(int j=0; j<amountTeams; j++) {
+					if(i!=j) {
+						for(int u=0; u<n; u++) {
+							for(int s=0; s<amountSlots-1; s++) {
+								if((d2<Math.floor(n/2)-1) && ((opp[s][i] == opp[s+1][j]) || (opp[s][i] == j+1) || (opp[s+1][j] == i+1))) {
+									GRBLinExpr d23tot = new GRBLinExpr();
+									d23tot.addTerm(1.0, z[i][j][s][u]);
+									model.addConstr(d23tot, GRB.EQUAL, 0, "C23"+i+j+u+s);
+								}
+							}
+						}
+					}
+				}
+			}
 			
 			// Solve
 			model.optimize();
@@ -370,7 +371,9 @@ public class TUP {
 	private static void printSolution(GRBModel model, GRBVar[][][] x,
             GRBVar[][][][] z) throws GRBException {
 		if (model.get(GRB.IntAttr.Status) == GRB.Status.OPTIMAL) {
-			System.out.println("\nCost: " + model.get(GRB.DoubleAttr.ObjVal));
+			System.out.println("\nCost:                " +
+					"                            " +
+					"                             " + model.get(GRB.DoubleAttr.ObjVal));
 			
 			boolean print = false;
 			if(print) {
