@@ -18,7 +18,7 @@ public class TUP {
 		/////////////////
 		//Kies dataset //
 		/////////////////
-		String dataset = "4"; // Opl: 5176
+//		String dataset = "4"; // Opl: 5176
 //		String dataset = "6"; // Opl: 14077
 //		String dataset = "6a"; // Opl: 15457
 //		String dataset = "6b"; // Opl: 16716
@@ -35,7 +35,7 @@ public class TUP {
 		execute(dataset);
 		
 		// Test allemaal
-//		String[] datasets = {"4", "6", "6a", "6b", "6c", "8", "8a"};//, "8b", "8c", "10", "10a", "10b", "10c"};
+//		String[] datasets = {"4", "6", "6a", "6b", "6c", "8", "8a", "8b", "8c", "10", "10a", "10b", "10c","12","14","14a","14b","14c"};
 //		for(String s: datasets) {
 //			execute(s);
 //			for(int i=0; i<100; i++) {
@@ -57,6 +57,8 @@ public class TUP {
 			double amountTeams = dist[0].length;
 			double amountSlots = 2*amountTeams-2;
 			System.out.println("number of teams = "+amountTeams);
+			
+			char type = GRB.CONTINUOUS;
 						
 			// Parameters
 			double d1 = 0;
@@ -75,7 +77,7 @@ public class TUP {
 				for(int u=0; u<n; ++u) {
 					for(int s=0; s<amountSlots; ++s) {
 						x[i][s][u] = 
-								model.addVar(0, 1, 0,GRB.BINARY, "x"+(i+1)+(s+1)+(u+1));
+								model.addVar(0, 1, 0,type, "x"+(i+1)+(s+1)+(u+1));
 					}
 				}
 			}
@@ -86,7 +88,7 @@ public class TUP {
 					for(int u=0; u<n; ++u) {
 						for(int s=0; s<amountSlots-1; ++s) {
 							z[i][j][s][u] = 
-									model.addVar(0, 1, dist[i][j],GRB.BINARY, "z"+(i+1)+(j+1)+(s+1)+(u+1));
+									model.addVar(0, 1, dist[i][j],type, "z"+(i+1)+(j+1)+(s+1)+(u+1));
 						}
 					}
 				}
@@ -280,7 +282,8 @@ public class TUP {
 			
 			// Constraint 15
 			Random rand = new Random();
-			int k = rand.nextInt((int) ((4*n-2-1)+1));
+			//int k = rand.nextInt((int) ((4*n-2-1)+1));
+			int k = 0;
 
 			ArrayList<int[]> venues = new ArrayList<int[]>();
 			int umpire = 0;
@@ -295,7 +298,61 @@ public class TUP {
 			for(int[] v: venues) {
 				GRBLinExpr d15tot = new GRBLinExpr();
 				d15tot.addTerm(1.0, x[v[0]][k][v[1]]);
+				model.addConstr(d15tot, GRB.EQUAL, 1, "C15"+v[0]+v[1]);
 			}
+			
+//			// Constraint 16
+//			for(int i=0; i<amountTeams; i++) {
+//				for(int u=0; u<n; u++) {
+//					GRBLinExpr d16tot = new GRBLinExpr();
+//					for(int j=0; j<amountTeams; j++) {
+//						d16tot.addTerm(1.0, z[i][j][0][u]);
+//					}
+//					model.addConstr(x[i][0][u], GRB.EQUAL, d16tot, "C16"+i+u);
+//				}
+//			}
+//			
+//			// Constraint 17
+//			for(int i=0; i<amountTeams; i++) {
+//				for(int u=0; u<n; u++) {
+//					for(int s=1; s<amountSlots; s++) {
+//						GRBLinExpr d16tot = new GRBLinExpr();
+//						for(int j=0; j<amountTeams; j++) {
+//							d16tot.addTerm(1.0, z[j][i][s-1][u]);
+//						}
+//						model.addConstr(x[i][s][u], GRB.EQUAL, d16tot, "C16"+i+u);
+//					}
+//				}
+//			}
+//			
+//			// Constraint 22
+//			if(d1 < n-1) {
+//				for(int i=0; i<amountTeams; i++) {
+//					for(int u=0; u<n; u++) {
+//						for(int s=0; s<amountSlots - 1; s++) {
+//							GRBLinExpr d22tot = new GRBLinExpr();
+//							d22tot.addTerm(1.0, z[i][i][s][u]);
+//							model.addConstr(d22tot, GRB.EQUAL, 0, "C22"+i+u+s);
+//						}
+//					}
+//				}
+//			}
+//			
+//			// Constraint 23
+//			for(int i=0; i<amountTeams; i++) {
+//				for(int j=0; j<amountTeams; j++) {
+//					if(i==j) break;
+//					for(int u=0; u<n; u++) {
+//						for(int s=0; s<amountSlots-1; s++) {
+//							if((d2<n2) && (opp[s][i] == opp[s+1][j] || opp[s][i] == j+1 || opp[s+1][j] == i+1)) {
+//								GRBLinExpr d23tot = new GRBLinExpr();
+//								d23tot.addTerm(1.0, z[i][j][s][u]);
+//								model.addConstr(d23tot, GRB.EQUAL, 0, "C23"+i+j+u+s);
+//							}
+//						}
+//					}
+//				}
+//			}
 			
 			// Solve
 			model.optimize();
@@ -315,31 +372,36 @@ public class TUP {
 		if (model.get(GRB.IntAttr.Status) == GRB.Status.OPTIMAL) {
 			System.out.println("\nCost: " + model.get(GRB.DoubleAttr.ObjVal));
 			
-			// Print waardes voor de x'en
-//			System.out.println("\nX:");
-//			for (int i = 0; i < x.length; ++i) {
-//				for(int s = 0; s<x[0].length; ++s) {
-//					for(int u = 0; u<x[0][0].length; ++u) {
-//						//if (x[i][s][c].get(GRB.DoubleAttr.X) > 0.0001) {
-//							System.out.println(x[i][s][u].get(GRB.StringAttr.VarName) + " " +
-//									x[i][s][u].get(GRB.DoubleAttr.X));
-//						//}
-//					}
-//				}
-//			}
-//			
-//			// Print waardes voor alle z
-//			System.out.println("\nZ:");
-//			for (int i = 0; i < z.length; ++i) {
-//				for(int j = 0; j< z[0].length; ++j) {
-//					for(int u=0; u<z[0][0][0].length; ++u) {
-//						for(int s= 0; s<z[0][0].length-1; ++s){
-//							System.out.println(z[i][j][s][u].get(GRB.StringAttr.VarName) + " " +
-//									z[i][j][s][u].get(GRB.DoubleAttr.X));
-//						}
-//					}
-//				}
-//			}
+			boolean print = false;
+			if(print) {
+				// Print waardes voor de x'en
+				System.out.println("\nX:");
+				for (int i = 0; i < x.length; ++i) {
+					for(int s = 0; s<x[0].length; ++s) {
+						for(int u = 0; u<x[0][0].length; ++u) {
+							if (x[i][s][u].get(GRB.DoubleAttr.X) > 0.0001) {
+								System.out.println(x[i][s][u].get(GRB.StringAttr.VarName) + " " +
+										x[i][s][u].get(GRB.DoubleAttr.X));
+							}
+						}
+					}
+				}
+				
+				// Print waardes voor alle z
+				System.out.println("\nZ:");
+				for (int i = 0; i < z.length; ++i) {
+					for(int j = 0; j< z[0].length; ++j) {
+						for(int u=0; u<z[0][0][0].length; ++u) {
+							for(int s= 0; s<z[0][0].length-1; ++s){
+								if(z[i][j][s][u].get(GRB.DoubleAttr.X) > 0.0001) {
+									System.out.println(z[i][j][s][u].get(GRB.StringAttr.VarName) + " " +
+											z[i][j][s][u].get(GRB.DoubleAttr.X));
+								}
+							}
+						}
+					}
+				}
+			}
 		} else {
 			System.out.println("No solution");
 		}
