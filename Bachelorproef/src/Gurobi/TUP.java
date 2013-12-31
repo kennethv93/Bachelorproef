@@ -18,7 +18,7 @@ public class TUP {
 		/////////////////
 		//Kies dataset //
 		/////////////////
-//		String dataset = "4"; // Opl: 5176
+		String dataset = "14"; // Opl: 5176
 //		String dataset = "6"; // Opl: 14077
 //		String dataset = "6a"; // Opl: 15457
 //		String dataset = "6b"; // Opl: 16716
@@ -32,22 +32,25 @@ public class TUP {
 //		String dataset = "10b"; // Opl: 45609
 //		String dataset = "10c"; // Opl: 43149
 
-//		execute(dataset); "4", "6", "6a", "6b", "6c", "8", "8a", "8b", "8c", "10", "10a", "10b", "10c","12","14","14a","14b","14c", "16", "16a", "16b", "16c", "18", "20", "22", 
+		execute(dataset,0,0); 
 		
 		// Test allemaal
-		String[] datasets = {"24","26","28","30","32"};
-		for(String s: datasets) {
-			execute(s);
-			for(int i=0; i<120; i++) {
-				System.out.print("-");
-			}
-			System.out.println();
-		}
+//		String[] datasets = {"4", "6", "6a", "6b", "6c", "8", "8a", "8b", "8c", "10", "10a", "10b", "10c","12","14","14a","14b","14c", 
+//								"16", "16a", "16b", "16c", "18", "20", "22","24","26","28","30","32"};
+//		for(String s: datasets) {
+//			execute(s,0,0);
+//			for(int i=0; i<120; i++) {
+//				System.out.print("-");
+//			}
+//			System.out.println();
+//		}
 	}
 	
-	public static void execute(String dataset) throws IOException {
+	public static ArrayList<ArrayList<int[]>> execute(String dataset, double d1, double d2) throws IOException {
+		
+		ArrayList<ArrayList<int[]>> solution = null;
+		
 		try {		
-					
 			// Data inlezen
 			Datareader dr = new Datareader();
 			dr.getData("D:\\Dropbox\\School\\bachelorproef\\datasets\\umps"+dataset+".txt");
@@ -61,8 +64,6 @@ public class TUP {
 			char type = GRB.CONTINUOUS;
 						
 			// Parameters
-			double d1 = 0;
-			double d2 = 0;
 			double n1 = n-d1-1;
 			double n2 = Math.floor(n/2)-d2-1;
 			
@@ -357,15 +358,19 @@ public class TUP {
 			
 			// Solve
 			model.optimize();
+			solution = getSolution(model,x,z,opp);
 			printSolution(model,x,z);
 
 			model.dispose();
 			env.dispose();
+			
+			
 		} catch (GRBException e) {
 			System.out.println("Error code: " + e.getErrorCode() + ". " +
 								e.getMessage());
 			
 		}
+		return solution;
 	}
 	
 	private static void printSolution(GRBModel model, GRBVar[][][] x,
@@ -375,7 +380,7 @@ public class TUP {
 					"                            " +
 					"                             " + model.get(GRB.DoubleAttr.ObjVal));
 			
-			boolean print = false;
+			boolean print = true;
 			if(print) {
 				// Print waardes voor de x'en
 				System.out.println("\nX:");
@@ -408,6 +413,36 @@ public class TUP {
 		} else {
 			System.out.println("No solution");
 		}
-		}	
 	}
+	
+	private static ArrayList<ArrayList<int[]>> getSolution(GRBModel model, GRBVar[][][] x,
+            GRBVar[][][][] z, int[][] opp) throws GRBException {
+		
+		ArrayList<ArrayList<int[]>> solution = new ArrayList<ArrayList<int[]>>();
+		
+		for(int u = 0; u<x[0][0].length; ++u) {
+			ArrayList<int[]> ump = new ArrayList<int[]>();
+			for(int s = 0; s<x[0].length; ++s) {
+				ump.add(new int[2]);
+			}
+			solution.add(ump);
+		}
+		
+		for (int i = 0; i < x.length; ++i) {
+			for(int s = 0; s<x[0].length; ++s) {
+				for(int u = 0; u<x[0][0].length; ++u) {
+					if (x[i][s][u].get(GRB.DoubleAttr.X) == 1) {
+						int[] match = new int[2];
+						match[0] = i+1;
+						match[1] = opp[s][i];
+						solution.get(u).get(s)[0] = i+1;
+						solution.get(u).get(s)[1] = opp[s][i];
+					}
+				}
+			}
+		}
+		
+		return solution;	
+	}
+}
 
