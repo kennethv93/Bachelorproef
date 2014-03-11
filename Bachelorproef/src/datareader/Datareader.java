@@ -8,12 +8,12 @@ import java.io.IOException;
 
 public class Datareader {
 	
+	// PARAMETERS
+	//private static int windowsize = ;
+	
+	// MATRICES
 	private int[][] dist;
 	private int[][] opp;
-	
-	public Datareader() {
-				
-	}
 	
 	public int[][] getDist() {
 		return dist;
