@@ -4,13 +4,15 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Random;
 
+import javax.swing.JOptionPane;
+
 import datareader.Datareader;
 import datareader.UmpireTable;
 import gurobi.*;
 
 public class TUPWindows {
 
-	static char type = GRB.BINARY; // relaxation
+	static char type = GRB.CONTINUOUS; // relaxation
 	static boolean print = true;
 	static boolean printVars = false;
 	static boolean printToConsole = false;
@@ -20,7 +22,7 @@ public class TUPWindows {
 	 */
 	static boolean c2 = true;
 	static boolean c3 = false;
-	static boolean c4 = true; // Contraint 3, only use when executing a full dataset!
+	static boolean c4 = false; // Contraint 3, only use when executing a full dataset!
 	static boolean c5 = true;
 	static boolean c6 = true;
 	static boolean c7 = false;
@@ -40,20 +42,35 @@ public class TUPWindows {
 	 */
 	public static void main(String[] args) throws IOException {
 		
-		/*
-		 * DATASET
-		 */
-		String dataset = "4"; 
+		Object[] options = {"Execute 1 dataset",
+							"Execute all datasets",
+							"Cancel"};
 
-		/*
-		 * EXECUTE ALL
-		 */
-		executeAll(); 
+		int choice = JOptionPane.showOptionDialog(null, 
+				"Choose an option.", 
+				"Traveling Umpire Problem", 
+				JOptionPane.YES_NO_CANCEL_OPTION, 
+				JOptionPane.QUESTION_MESSAGE, 
+				null, 
+				options, 
+				options[0]);
 		
-		/*
-		 * EXECUTE
-		 */
-		//execute(dataset,0,0);
+		Object[] datasets = {"4", "6", "6a", "6b", "6c", "8", "8a", "8b", "8c", "10", "10a", "10b", "10c","12","14","14a","14b","14c", 
+				"16", "16a", "16b", "16c", "18", "20", "22","24","26","28","30","32"};
+		
+		switch (choice) {
+		case 0: String dataset = (String) JOptionPane.showInputDialog(null, 
+						"Choose a dataset", 
+						"Traveling Umpire Problem", 
+						JOptionPane.PLAIN_MESSAGE,
+						null,
+						datasets,
+						"4");
+				execute(dataset,0,0);
+				break;
+		case 1:	executeAll();
+				break;
+		}
 	}
 	
 	/**
@@ -81,15 +98,16 @@ public class TUPWindows {
 			int[][] dist = dr.getDist();
 			int[][] opp = dr.getOpp();
 			
+			double n = dist.length/2;
+			double amountTeams = opp[0].length;
+			double amountSlots = opp.length;
+			
 			//windows
 			int N = 1;
 			int begin = (N-1)*(windowsize-1);
 			int end = begin + windowsize - 1;
+			if(end>=amountSlots) end = (int) (amountSlots -1);
 //			int amountWindows = UmpireTable.getAmountWindows(windowsize, opp.length);
-			
-			double n = dist.length/2;
-			double amountTeams = opp[0].length;
-			double amountSlots = opp.length;
 						
 			// Parameters
 			double n1 = n-d1-1;
@@ -285,7 +303,7 @@ public class TUPWindows {
 			if(c15) {
 				Random rand = new Random();
 				//int k = rand.nextInt((int) ((4*n-2-1)+1));
-				int k = begin;
+				int k = (begin+end)/2;
 	
 				ArrayList<int[]> venues = new ArrayList<int[]>();
 				int umpire = 0;
@@ -478,7 +496,7 @@ public class TUPWindows {
 						"16", "16a", "16b", "16c", "18", "20", "22","24","26","28","30","32"};
 		for(String s: datasets) {
 			execute(s,0,0);
-			for(int i=0; i<120; i++) {
+			for(int i=0; i<40; i++) {
 				System.out.print("-");
 			}
 			System.out.println();
