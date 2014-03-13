@@ -1,2 +1,7 @@
-/datareader
 /Gurobi
+/MetaheuristicDecomposition
+/com
+/datareader
+/geneticAlgorithm
+/simulatedAnnealing
+/solutionChecker

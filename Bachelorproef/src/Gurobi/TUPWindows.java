@@ -13,16 +13,16 @@ import gurobi.*;
 public class TUPWindows {
 
 	static char type = GRB.CONTINUOUS; // relaxation
-	static boolean print = true;
+	static boolean printSol = false;
 	static boolean printVars = false;
-	static boolean printToConsole = false;
-	
+	static boolean printToConsole = true;
+	 
 	/*
 	 * TURN CONSTRAINTS ON/OFF
 	 */
 	static boolean c2 = true;
 	static boolean c3 = false;
-	static boolean c4 = false; // Contraint 3, only use when executing a full dataset!
+	static boolean c4 = true; // Contraint 3, only use when executing a full dataset!
 	static boolean c5 = true;
 	static boolean c6 = true;
 	static boolean c7 = false;
@@ -66,7 +66,7 @@ public class TUPWindows {
 						null,
 						datasets,
 						"4");
-				execute(dataset,0,0);
+				if(dataset != null) execute(dataset,0,0);
 				break;
 		case 1:	executeAll();
 				break;
@@ -301,9 +301,9 @@ public class TUPWindows {
 			
 			// Constraint 15
 			if(c15) {
-				Random rand = new Random();
+				//Random rand = new Random();
 				//int k = rand.nextInt((int) ((4*n-2-1)+1));
-				int k = (begin+end)/2;
+				int k = begin;
 	
 				ArrayList<int[]> venues = new ArrayList<int[]>();
 				int umpire = 0;
@@ -372,7 +372,7 @@ public class TUPWindows {
 			// Solve
 			model.optimize();
 			solution = getSolution(model,x,z,opp,begin,end);
-			if(print) printSolution(solution);
+			if(printSol) printSolution(solution);
 			printSolution(model,x,z);
 
 			model.dispose();
@@ -501,6 +501,29 @@ public class TUPWindows {
 			}
 			System.out.println();
 		}
+	}
+	
+	public static void solveWindows(int amountSlots, int windowSize) {
+		int currentWindow = 1;
+		while(hasNextWindow(amountSlots, windowSize, currentWindow)) {
+			
+		}
+	}
+	
+	public static boolean hasNextWindow(int amountSlots, int windowSize, int currentWindow) {
+		if(windowSize > amountSlots) return false;
+		if(windowSize == amountSlots) return false;
+		if(currentWindow == 1) return true;
+		
+		int slotsLeft = amountSlots;
+		int window = currentWindow - 1;
+		slotsLeft = slotsLeft - windowSize;
+		while(window != 0) {
+			slotsLeft -= (windowSize - 1);
+			window--;
+		}
+		if(slotsLeft <= 0) return false;
+		return true;
 	}
 }
 
