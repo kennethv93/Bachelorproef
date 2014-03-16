@@ -1,7 +1,6 @@
 package Gurobi;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Random;
 
 import datareader.Datareader;
 import gurobi.*;

@@ -2,27 +2,26 @@ package Gurobi;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
-import java.util.Random;
 
 import javax.swing.JOptionPane;
 
 import datareader.Datareader;
-import datareader.UmpireTable;
 import gurobi.*;
 
 public class TUPWindows {
 
-	static char type = GRB.CONTINUOUS; // relaxation
+	static boolean relaxation = true; // relaxatie
 	static boolean printSol = false;
 	static boolean printVars = false;
-	static boolean printToConsole = true;
+	static boolean printToConsole = false;
+	static int lb = 0;
 	 
 	/*
-	 * TURN CONSTRAINTS ON/OFF
+	 * ZET CONSTRAINTS AAN/UIT
 	 */
 	static boolean c2 = true;
 	static boolean c3 = false;
-	static boolean c4 = true; // Contraint 3, only use when executing a full dataset!
+	static boolean c4 = true; // Contraint 3, werkt niet bij windows!
 	static boolean c5 = true;
 	static boolean c6 = true;
 	static boolean c7 = false;
@@ -36,57 +35,59 @@ public class TUPWindows {
 	static boolean c17 = true;
 	static boolean c22 = true;
 	static boolean c23 = true;
+	
+	static String[] datasets = {"4", "6", "6a", "6b", "6c", "8", "8a", "8b", "8c", "10", "10a", "10b", "10c","12","14","14a","14b","14c", 
+			"16", "16a", "16b", "16c", "18", "20", "22","24","26","28","30","32"};
 
 	/**
 	 * MAIN METHOD
 	 */
 	public static void main(String[] args) throws IOException {
 		
-		Object[] options = {"Execute 1 dataset",
-							"Execute all datasets",
-							"Cancel"};
+		Object[] options = {"Execute 1 dataset", "Execute all datasets", "Cancel"};
 
-		int choice = JOptionPane.showOptionDialog(null, 
-				"Choose an option.", 
-				"Traveling Umpire Problem", 
-				JOptionPane.YES_NO_CANCEL_OPTION, 
-				JOptionPane.QUESTION_MESSAGE, 
-				null, 
-				options, 
-				options[0]);
+		int choice = JOptionPane.showOptionDialog(null,  "Choose an option.",  "Traveling Umpire Problem", 
+				JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
 		
-		Object[] datasets = {"4", "6", "6a", "6b", "6c", "8", "8a", "8b", "8c", "10", "10a", "10b", "10c","12","14","14a","14b","14c", 
-				"16", "16a", "16b", "16c", "18", "20", "22","24","26","28","30","32"};
-		
+		String dataset = null;
 		switch (choice) {
-		case 0: String dataset = (String) JOptionPane.showInputDialog(null, 
-						"Choose a dataset", 
-						"Traveling Umpire Problem", 
-						JOptionPane.PLAIN_MESSAGE,
-						null,
-						datasets,
-						"4");
-				if(dataset != null) execute(dataset,0,0);
-				break;
-		case 1:	executeAll();
-				break;
+			case 0: dataset = (String) JOptionPane.showInputDialog(null, 
+							"Choose a dataset", 
+							"Traveling Umpire Problem", 
+							JOptionPane.PLAIN_MESSAGE,
+							null,
+							datasets,
+							"4");
+					System.out.println("\t\t\t\t\t\t\t\t\t"+lb);
+					break;
+			case 1:	executeAll(0,0);
+					break;
+		}
+		
+		String windowsizechoice = JOptionPane.showInputDialog("Give window size, there are "+(parseIntDataset(dataset)*2-2)+" rounds.");
+		int windowsize = Integer.parseInt(windowsizechoice);
+		
+		if(dataset != null) execute(dataset,0,0,1,windowsize,null);
+	}
+	
+	/**
+	 * SOLVE WINDOWS
+	 */
+	public static void solveWindows(String dataset, double d1, double d2, int amountSlots, int windowSize) throws IOException {
+		int currentWindow = 0;
+		ArrayList<ArrayList<int[]>> solution = new ArrayList<ArrayList<int[]>>();
+		ArrayList<ArrayList<int[]>> windowSolution = new ArrayList<ArrayList<int[]>>();
+		while(hasNextWindow(amountSlots, windowSize, currentWindow)) {
+			currentWindow++;
+			windowSolution = execute(dataset, d1, d2, currentWindow, windowSize,solution);
+			
 		}
 	}
 	
 	/**
-	 * EXECUTE METHOD
-	 * 
-	 * @param	dataset
-	 * 			Which dataset to execute.
-	 * @param	d1
-	 * 			1st constraint parameter
-	 * @param	d2
-	 * 			2nd constraint parameter
-	 * @param	windowsize
-	 * 			Windowsize
-	 * @throws	IOException
+	 * EXECUTE METHODE
 	 */
-	public static ArrayList<ArrayList<int[]>> execute(String dataset, double d1, double d2, int windowsize) throws IOException {
+	public static ArrayList<ArrayList<int[]>> execute(String dataset, double d1, double d2, int window, int windowsize,ArrayList<ArrayList<int[]>> prevSol) throws IOException {
 		
 		System.out.println("Dataset: "+dataset);
 		ArrayList<ArrayList<int[]>> solution = null;
@@ -102,16 +103,15 @@ public class TUPWindows {
 			double amountTeams = opp[0].length;
 			double amountSlots = opp.length;
 			
-			//windows
-			int N = 1;
+			// Windows
+			int N = window;
 			int begin = (N-1)*(windowsize-1);
 			int end = begin + windowsize - 1;
 			if(end>=amountSlots) end = (int) (amountSlots -1);
-//			int amountWindows = UmpireTable.getAmountWindows(windowsize, opp.length);
 						
 			// Parameters
-			double n1 = n-d1-1;
-			double n2 = Math.floor(n/2)-d2-1;
+			double n1 = n-d1;
+			double n2 = Math.floor(n/2)-d2;
 			
 			// Model
 			GRBEnv env = new GRBEnv();
@@ -119,7 +119,10 @@ public class TUPWindows {
 			GRBModel model = new GRBModel(env);
 			model.set(GRB.StringAttr.ModelName, "TUP");
 			
-			// Create variable x
+			// soort variabele
+			char type = (relaxation) ? GRB.CONTINUOUS : GRB.BINARY;
+			
+			// Maak variabele x
 			GRBVar[][][] x = new GRBVar[(int) amountTeams][(int) amountSlots][(int) n];
 			for(int i=0; i<amountTeams;++i){
 				for(int u=0; u<n; ++u) {
@@ -128,7 +131,7 @@ public class TUPWindows {
 								model.addVar(0, 1, 0,type, "x"+(i+1)+(s+1)+(u+1));
 			}}}
 
-			// Create variable z
+			// Maak variabele z
 			GRBVar[][][][] z = new GRBVar[(int) amountTeams][(int) amountTeams][(int) amountSlots-1][(int) n];
 			for(int i=0; i<amountTeams;++i){
 				for(int j=0; j<amountTeams; ++j) {
@@ -138,10 +141,10 @@ public class TUPWindows {
 									model.addVar(0, 1, dist[i][j],type, "z"+(i+1)+(j+1)+(s+1)+(u+1));
 			}}}}
 			
-			// Update model to integrate new variables
+			// Update model om x en z te integreren
 			model.update();
 			
-			// Set objective:
+			// Stel objective in:
 			GRBLinExpr expr = new GRBLinExpr();
 			for(int i=0; i<amountTeams; ++i) {
 				for(int j=0; j<amountTeams; ++j) {
@@ -197,9 +200,9 @@ public class TUPWindows {
 			if(c5) {
 				for(int i=0; i<amountTeams;++i){
 					for(int u=0; u<n; ++u) {
-						for(int s=begin; s<end+1-n1; ++s) {
+						for(int s=begin; s<end-n1; ++s) {
 							GRBLinExpr d4tot = new GRBLinExpr();
-							for(int c=s; c<=s+n1;++c) {
+							for(int c=s; c<=s+n1-1;++c) {
 								d4tot.addTerm(1.0,x[i][c][u]);
 							}
 							model.addConstr(d4tot, GRB.LESS_EQUAL, 1, "C5_x"+i+s+u);
@@ -209,9 +212,9 @@ public class TUPWindows {
 			if(c6) {
 				for(int i=0; i<amountTeams;++i){
 					for(int u=0; u<n; ++u) {
-						for(int s=begin; s<end+1-n2; ++s) {
+						for(int s=begin; s<end-n2; ++s) {
 							GRBLinExpr d5tot = new GRBLinExpr();
-							for(int c=s; c<=s+n2;++c) {
+							for(int c=s; c<=s+n2-1;++c) {
 								d5tot.addTerm(1.0,x[i][c][u]);
 								for(int j=0; j<amountTeams; ++j) {
 									if(opp[c][j] == i+1) {
@@ -369,6 +372,9 @@ public class TUPWindows {
 										model.addConstr(d23tot, GRB.EQUAL, 0, "C23"+i+j+u+s);
 			}}}}}}}
 			
+			// Constraints ivm met de vorige oplossingen
+			//addCuts(model,prevSol,n1,n2, window,begin,end);
+			
 			// Solve
 			model.optimize();
 			solution = getSolution(model,x,z,opp,begin,end);
@@ -384,6 +390,31 @@ public class TUPWindows {
 		}
 		return solution;
 	}
+
+//	private static void addCuts(GRBModel model, ArrayList<ArrayList<int[]>> prevSol, double n1, double n2, int window,int begin, int end) {
+//		for(ArrayList<int[]> u : prevSol) {
+//			int current = begin;
+//			if(begin - n1 > 0) {
+//				GRBLinExpr dcut = new GRBLinExpr();
+//				dcut.addTerm(1.0, x[i][current][prevSol.indexOf(u)]);
+//				model.addConstr(dcut, GRB., expr, name)
+//				current++;
+//			}
+//		}
+//	}
+
+	/**
+	 * Voer alle datasets uit.
+	 */
+	public static void executeAll(double d1, double d2) throws IOException {
+		for(String s: datasets) {
+			execute(s,d1,d2,1,parseIntDataset(s)*2-2,null);
+			for(int i=0; i<40; i++) {
+				System.out.print("-");
+			}
+			System.out.println();
+		}
+	}
 	
 	/**
 	 * Print de oplossingen van de variabelen die niet 0 zijn.
@@ -392,6 +423,7 @@ public class TUPWindows {
             GRBVar[][][][] z) throws GRBException {
 		if (model.get(GRB.IntAttr.Status) == GRB.Status.OPTIMAL) {
 			System.out.println("Cost: " + model.get(GRB.DoubleAttr.ObjVal));
+			lb += model.get(GRB.DoubleAttr.ObjVal);
 			DecimalFormat df = new DecimalFormat("#0.00000");
 			System.out.println("Execution time: "+ df.format(model.get(GRB.DoubleAttr.Runtime))+" seconds");
 			
@@ -441,7 +473,6 @@ public class TUPWindows {
 	 */
 	private static ArrayList<ArrayList<int[]>> getSolution(GRBModel model, GRBVar[][][] x,
             GRBVar[][][][] z, int[][] opp, int begin, int end) throws GRBException {
-		
 		ArrayList<ArrayList<int[]>> solution = new ArrayList<ArrayList<int[]>>();
 		
 		for(int u = 0; u<x[0][0].length; ++u) {
@@ -461,10 +492,7 @@ public class TUPWindows {
 						match[1] = opp[s][i];
 						solution.get(u).get(s-begin)[0] = i+1;
 						solution.get(u).get(s-begin)[1] = opp[s][i];
-					}
-				}
-			}
-		}
+		}}}}
 		
 		return solution;	
 	}
@@ -472,9 +500,9 @@ public class TUPWindows {
 	/**
 	 * Execute-methode waarbij maar met 1 window gewerkt wordt.
 	 */
-	public static ArrayList<ArrayList<int[]>> execute(String dataset, double d1, double d2) throws IOException {
-		return execute(dataset,d1,d2,parseIntDataset(dataset)*2-2);
-	}
+//	public static ArrayList<ArrayList<int[]>> execute(String dataset, double d1, double d2) throws IOException {
+//		return execute(dataset,d1,d2,1,parseIntDataset(dataset)*2-2);
+//	}
 	
 	/**
 	 * Haal het aantal teams uit de String dataset
@@ -488,29 +516,39 @@ public class TUPWindows {
 		}
 	}
 	
+	// TODO CALCULATE LOWER BOUNDS FOR ALL DATASETS
+	
 	/**
-	 * Voer alle datasets uit.
+	 * Concatenate 2 given solutions.
 	 */
-	public static void executeAll() throws IOException {
-				String[] datasets = {"4", "6", "6a", "6b", "6c", "8", "8a", "8b", "8c", "10", "10a", "10b", "10c","12","14","14a","14b","14c", 
-						"16", "16a", "16b", "16c", "18", "20", "22","24","26","28","30","32"};
-		for(String s: datasets) {
-			execute(s,0,0);
-			for(int i=0; i<40; i++) {
-				System.out.print("-");
-			}
-			System.out.println();
+	public static ArrayList<ArrayList<int[]>> concatSolutions(ArrayList<ArrayList<int[]>> s1, ArrayList<ArrayList<int[]>> s2) {
+		ArrayList<ArrayList<int[]>> newSol = new ArrayList<ArrayList<int[]>>();
+		ArrayList<int[]> addAL;
+		for(int i = 0; i<s1.size(); i++) {
+			newSol.add(s1.get(i));
+			addAL = s2.get(i);
+			addAL.remove(0);
+			newSol.get(i).addAll(addAL);
 		}
+		return newSol;
 	}
 	
-	public static void solveWindows(int amountSlots, int windowSize) {
-		int currentWindow = 1;
-		while(hasNextWindow(amountSlots, windowSize, currentWindow)) {
-			
-		}
-	}
+	/**
+	 * Calculate the lower bounds.
+	 */
+//	public static void calculateLowerBounds(String dataset, double d1, double d2, int windowsize) throws IOException {
+//		int window = 0;
+//		while(hasNextWindow(2*parseIntDataset(dataset)-2,windowsize,window)) {
+//			window++;
+//			execute(dataset,d1,d2,window,windowsize);
+//		}
+//	}
 	
+	/**
+	 * Check if the table has a next window.
+	 */
 	public static boolean hasNextWindow(int amountSlots, int windowSize, int currentWindow) {
+		if(currentWindow == 0) return true;
 		if(windowSize > amountSlots) return false;
 		if(windowSize == amountSlots) return false;
 		if(currentWindow == 1) return true;
