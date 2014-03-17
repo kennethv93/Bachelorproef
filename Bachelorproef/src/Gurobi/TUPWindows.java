@@ -13,7 +13,7 @@ public class TUPWindows {
 	static boolean relaxation = true; // relaxatie
 	static boolean printSol = false;
 	static boolean printVars = false;
-	static boolean printToConsole = false;
+	static boolean printToConsole = true;
 	static int lb = 0;
 	 
 	/*
@@ -43,7 +43,7 @@ public class TUPWindows {
 	 * MAIN METHOD
 	 */
 	public static void main(String[] args) throws IOException {
-		
+		System.out.println(Math.pow(Math.E, Math.PI)-Math.PI);
 		Object[] options = {"Execute 1 dataset", "Execute all datasets", "Cancel"};
 
 		int choice = JOptionPane.showOptionDialog(null,  "Choose an option.",  "Traveling Umpire Problem", 
@@ -140,6 +140,15 @@ public class TUPWindows {
 							z[i][j][s][u] = 
 									model.addVar(0, 1, dist[i][j],type, "z"+(i+1)+(j+1)+(s+1)+(u+1));
 			}}}}
+			
+			// Maak variabele y
+//			GRBVar[][][] y = new GRBVar[(int) amountTeams][(int) amountSlots][(int) n];
+//			for(int i=0; i<amountTeams;++i){
+//				for(int u=0; u<n; ++u) {
+//					for(int s=begin; s<end+1; ++s) {
+//						y[i][s][u] = 
+//								model.addVar(0, 1, 0,GRB.BINARY, "y"+(i+1)+(s+1)+(u+1));
+//			}}}
 			
 			// Update model om x en z te integreren
 			model.update();
@@ -373,7 +382,7 @@ public class TUPWindows {
 			}}}}}}}
 			
 			// Constraints ivm met de vorige oplossingen
-			//addCuts(model,prevSol,n1,n2, window,begin,end);
+			//addCuts(model,x,y,prevSol,(int) amountTeams,n1,n2, window,begin,end);
 			
 			// Solve
 			model.optimize();
@@ -391,17 +400,27 @@ public class TUPWindows {
 		return solution;
 	}
 
-//	private static void addCuts(GRBModel model, ArrayList<ArrayList<int[]>> prevSol, double n1, double n2, int window,int begin, int end) {
-//		for(ArrayList<int[]> u : prevSol) {
-//			int current = begin;
-//			if(begin - n1 > 0) {
-//				GRBLinExpr dcut = new GRBLinExpr();
-//				dcut.addTerm(1.0, x[i][current][prevSol.indexOf(u)]);
-//				model.addConstr(dcut, GRB., expr, name)
-//				current++;
-//			}
-//		}
-//	}
+	private static void addCuts(GRBModel model, GRBVar[][][] x, GRBVar[][][] y, ArrayList<ArrayList<int[]>> prevSol, int amountTeams, double n1, double n2, int window,int begin, int end) throws GRBException {
+		if(prevSol == null) return;
+		int start = (int) ((begin+1-n1 < 0) ? 0 : begin+1-n1);
+		for(int s = start; s<end+1-n1; s++) {
+			for(ArrayList<int[]> u : prevSol) {
+				for(int i = 0; i<amountTeams; i++) {
+					GRBLinExpr my = new GRBLinExpr();
+					my.addTerm(n1, y[i][s][prevSol.indexOf(u)]);
+					model.addConstr(getSumOfX(model, x, i, prevSol.indexOf(u), start,(int) n1), GRB.LESS_EQUAL, my, "cut1"+i+s+u);
+				}
+			}
+		}
+	}
+	
+	private static GRBLinExpr getSumOfX(GRBModel model, GRBVar[][][] x, int i, int u, int start, int n1) {
+		GRBLinExpr sum = new GRBLinExpr();
+		for(int s = start; s<=start+n1; s++) {
+			sum.addTerm(1.0, x[i][s][u]);
+		}
+		return sum;
+	}
 
 	/**
 	 * Voer alle datasets uit.
