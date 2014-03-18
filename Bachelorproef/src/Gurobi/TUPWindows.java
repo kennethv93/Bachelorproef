@@ -10,7 +10,7 @@ import gurobi.*;
 
 public class TUPWindows {
 
-	static boolean relaxation = true; // relaxatie
+	static boolean relaxation = false; // relaxatie
 	static boolean printSol = true;
 	static boolean printVars = false;
 	static boolean printToConsole = true;
@@ -41,6 +41,8 @@ public class TUPWindows {
 	static int[][] dist;
 	static int[][] opp;
 	static double cost;
+	static double totalexectime;
+	static DecimalFormat df = new DecimalFormat("#0.00000");
 	
 	static String[] datasets = {"4", "6", "6a", "6b", "6c", "8", "8a", "8b", "8c", "10", "10a", "10b", "10c","12","14","14a","14b","14c", 
 			"16", "16a", "16b", "16c", "18", "20", "22","24","26","28","30","32"};
@@ -72,11 +74,6 @@ public class TUPWindows {
 		String windowsizechoice = JOptionPane.showInputDialog("Give window size, there are "+(parseIntDataset(dataset)*2-2)+" rounds.");
 		int windowsize = Integer.parseInt(windowsizechoice);
 		
-//		Solution prevSol = execute("10c",0,0,1,7,null);
-//		printSol(n,prevSol,1,3);
-//		Solution sol2 = execute("10c",0,0,2,7,prevSol);
-//		printSol(n,sol2,2,3);
-//		Solution sol3 = execute("10c",0,0,3,7,sol2);
 		int window = 0;
 		Solution sol = null;
 		while(hasNextWindow(parseIntDataset(dataset)*2-2,windowsize,window)) {
@@ -85,6 +82,7 @@ public class TUPWindows {
 			//printSol(n,sol,window,windowsize);
 		}
 		System.out.println("Total cost: "+cost);
+		System.out.println("Total execution time "+df.format(totalexectime)+"s");
 		//if(dataset != null) execute(dataset,0,0,2,3,prevSol);
 	}
 	
@@ -203,7 +201,11 @@ public class TUPWindows {
 			
 			sol = initialize(env,dist,n,amountTeams,amountSlots,begin,end);
 			GRBModel model = sol.getModel();
-			if(prevSol != null)sol.setX(prevSol.getX());
+//			if(prevSol != null) {
+//				sol.setX(prevSol.getX());
+//				//prevSol.getModel().dispose();
+//			}
+			
 			 
 			//model.set(GRB.IntAttr.ModelSense, 1);
 			addConstraints(sol,opp,n,amountTeams,amountSlots,begin,end,d1,d2,n1,n2);
@@ -385,7 +387,7 @@ public class TUPWindows {
 		if(c15) {
 			//Random rand = new Random();
 			//int k = rand.nextInt((int) ((4*n-2-1)+1));
-			int k = begin;
+			int k = (begin+end1)/2;
 
 			ArrayList<int[]> venues = new ArrayList<int[]>();
 			int umpire = 0;
@@ -470,7 +472,7 @@ public class TUPWindows {
 					my.addTerm(Integer.MAX_VALUE, y[i][s][u]);
 					GRBLinExpr my2 = new GRBLinExpr();
 					my2.addConstant(Integer.MAX_VALUE); my2.addTerm(-1, y[i][s][u]);
-					
+					System.out.println("Adding cuts for x"+i+s+u);
 					model.addConstr(x[i][s][u], GRB.LESS_EQUAL, my2, "cut2"+i+s+u);
 					model.addConstr(getSumOfX(model, x, i, u, start,(int) n1), GRB.LESS_EQUAL, my, "cut1"+i+s+u);
 				}
@@ -541,10 +543,11 @@ public class TUPWindows {
 		GRBVar[][][] x = sol.getX();
 		GRBVar[][][][] z = sol.getZ();
 		if (model.get(GRB.IntAttr.Status) == GRB.Status.OPTIMAL) {
-			System.out.println("Cost: " + model.get(GRB.DoubleAttr.ObjVal));
+			//System.out.println("Cost: " + model.get(GRB.DoubleAttr.ObjVal));
 			cost += model.get(GRB.DoubleAttr.ObjVal);
 			DecimalFormat df = new DecimalFormat("#0.00000");
-			System.out.println("Execution time: "+ df.format(model.get(GRB.DoubleAttr.Runtime))+" seconds");
+			//System.out.println("Execution time: "+ df.format(model.get(GRB.DoubleAttr.Runtime))+" seconds");
+			totalexectime+=model.get(GRB.DoubleAttr.Runtime);
 			
 			if(printVars) {
 				// Print waardes voor alle x
