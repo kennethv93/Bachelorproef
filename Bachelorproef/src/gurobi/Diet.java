@@ -1,4 +1,4 @@
-package Gurobi;
+package gurobi;
 
 /* Copyright 2013, Gurobi Optimization, Inc. */
 

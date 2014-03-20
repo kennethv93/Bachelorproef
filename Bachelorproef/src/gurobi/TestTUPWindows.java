@@ -1,4 +1,4 @@
-package Gurobi;
+package gurobi;
 
 import static org.junit.Assert.*;
 

@@ -1,4 +1,4 @@
-package Gurobi;
+package gurobi;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -79,7 +79,7 @@ public class TUPWindows {
 		while(hasNextWindow(parseIntDataset(dataset)*2-2,windowsize,window)) {
 			window++;
 			sol = execute(dataset,0,0,window,windowsize,sol);
-			//printSol(n,sol,window,windowsize);
+			printSol(n,sol,window,windowsize);
 		}
 		System.out.println("Total cost: "+cost);
 		System.out.println("Total execution time "+df.format(totalexectime)+"s");
@@ -203,7 +203,7 @@ public class TUPWindows {
 			GRBModel model = sol.getModel();
 //			if(prevSol != null) {
 //				sol.setX(prevSol.getX());
-//				//prevSol.getModel().dispose();
+//				prevSol.getModel().dispose();
 //			}
 			
 			 
@@ -619,6 +619,9 @@ public class TUPWindows {
 		return newSol;
 	}
 	
+	/**
+	 * Get the umpire according to a given match.
+	 */
 	public static ArrayList<int[]> getUmpireByGivenMatch(int[] match, ArrayList<ArrayList<int[]>> table) {
 		ArrayList<int[]> solution = null;
 		for(ArrayList<int[]> u : table) {

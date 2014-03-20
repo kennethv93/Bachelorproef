@@ -1,4 +1,4 @@
-package Gurobi;
+package gurobi;
 
 import gurobi.GRBModel;
 import gurobi.GRBVar;
