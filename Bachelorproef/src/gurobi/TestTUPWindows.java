@@ -42,5 +42,18 @@ public class TestTUPWindows {
 		
 		assertEquals(TUPWindows.concatSolutions(kak1,kak2),sol);	
 	}
+	
+	@Test
+	public void testPrintSolution() {
+		int[] u11 = {1,2}; int[] u12 = {3,4}; int[] u13 = {5,6};
+		int[] u21 = {7,8}; int[] u22 = {9,10}; int[] u23 = {11,12};
+		
+		ArrayList<ArrayList<int[]>> kak1 = new ArrayList<ArrayList<int[]>>();
+		ArrayList<int[]> ul11 = new ArrayList<int[]>();
+		ArrayList<int[]> ul12 = new ArrayList<int[]>();
+		ul11.add(u11); ul11.add(u12); kak1.add(ul11);
+		ul12.add(u21); ul12.add(u22); kak1.add(ul12);
+		TUPWindows.printSolution(kak1);
+	}
 
 }

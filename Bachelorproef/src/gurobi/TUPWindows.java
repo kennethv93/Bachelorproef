@@ -76,11 +76,15 @@ public class TUPWindows {
 		
 		int window = 0;
 		Solution sol = null;
+		ArrayList<ArrayList<int[]>> soltable = new ArrayList<ArrayList<int[]>>();
+		System.out.println(soltable.isEmpty());
 		while(hasNextWindow(parseIntDataset(dataset)*2-2,windowsize,window)) {
 			window++;
-			sol = execute(dataset,0,0,window,windowsize,sol);
-			printSol(n,sol,window,windowsize);
+			sol = execute(dataset,0,0,window,windowsize,sol);;
+			soltable = concatSolutions(soltable,getSolution(n,sol,window,windowsize));
+			
 		}
+		printSolution(soltable);
 		System.out.println("Total cost: "+cost);
 		System.out.println("Total execution time "+df.format(totalexectime)+"s");
 		//if(dataset != null) execute(dataset,0,0,2,3,prevSol);
@@ -201,24 +205,19 @@ public class TUPWindows {
 			
 			sol = initialize(env,dist,n,amountTeams,amountSlots,begin,end);
 			GRBModel model = sol.getModel();
-//			if(prevSol != null) {
-//				sol.setX(prevSol.getX());
-//				prevSol.getModel().dispose();
-//			}
-			
 			 
 			//model.set(GRB.IntAttr.ModelSense, 1);
 			addConstraints(sol,opp,n,amountTeams,amountSlots,begin,end,d1,d2,n1,n2);
 			
 			// Cuts
-			if(window > 1) addCuts(sol, amountTeams,n,n1,n2, window,begin,end);
+			if(window > 1) addCuts(prevSol, sol, amountTeams,n,n1,n2, window,begin,end);
 			System.out.println("Cuts added");
 			
 			// Solve
 			System.out.println("Start solving.");
 			model.optimize();
 			
-			if(printSol) printSolution(sol);
+			if(printSol) printVars(sol);
 
 			//model.dispose();
 			//env.dispose();
@@ -384,10 +383,10 @@ public class TUPWindows {
 		 */
 		
 		// Constraint 15
-		if(c15) {
+		if(c15 && begin == 0) {
 			//Random rand = new Random();
 			//int k = rand.nextInt((int) ((4*n-2-1)+1));
-			int k = (begin+end1)/2;
+			int k = begin;
 
 			ArrayList<int[]> venues = new ArrayList<int[]>();
 			int umpire = 0;
@@ -457,32 +456,43 @@ public class TUPWindows {
 	/**
 	 * Add cuts.
 	 */
-	private static void addCuts(Solution sol, double amountTeams, double n,
+	private static void addCuts(Solution prevSol, Solution sol, double amountTeams, double n,
 			double n1, double n2, int window,int begin, int end) throws GRBException {
 		if(sol == null) return;
 		GRBModel model = sol.getModel();
 		GRBVar[][][] x = sol.getX();
+		GRBVar[][][] prevX = prevSol.getX();
 		GRBVar[][][] y = sol.getY(); 
+		
+		// ADD OVERLAP CONSTRAINT
+		for(int u=0; u<n; u++) {
+			for(int i=0; i<amountTeams; i++) {
+				model.addConstr(x[i][begin][u], GRB.EQUAL, prevX[i][begin][u].get(GRB.DoubleAttr.X), "overlap"+i+begin+u);
+			}
+		}
+		
+		// ADD CUTS
 		int end1 = (int) ((end > 4*n-3) ? 4*n-3 : end);
 		int start = (int) ((begin+1-n1 < 0) ? 0 : begin+1-n1);
-		for(int s = start; s<end1+1-n1; s++) {
+		for(int s = start; s<start+n1-2; s++) {
 			for(int u=0; u<n; u++) {
 				for(int i = 0; i<amountTeams; i++) {
 					GRBLinExpr my = new GRBLinExpr();
-					my.addTerm(Integer.MAX_VALUE, y[i][s][u]);
-					GRBLinExpr my2 = new GRBLinExpr();
-					my2.addConstant(Integer.MAX_VALUE); my2.addTerm(-1, y[i][s][u]);
-					System.out.println("Adding cuts for x"+i+s+u);
-					model.addConstr(x[i][s][u], GRB.LESS_EQUAL, my2, "cut2"+i+s+u);
+					my.addTerm(1000, y[i][s][u]);
 					model.addConstr(getSumOfX(model, x, i, u, start,(int) n1), GRB.LESS_EQUAL, my, "cut1"+i+s+u);
+					
+					GRBLinExpr my2 = new GRBLinExpr();
+					my2.addConstant(1000); my2.addTerm(-1000, y[i][s][u]);
+					model.addConstr(prevX[i][s][u], GRB.LESS_EQUAL, my2, "cut2"+i+s+u);
+					System.out.println("Adding cuts for x"+i+s+u);
 				}
 			}
 		}
 	}
-	
+
 	private static GRBLinExpr getSumOfX(GRBModel model, GRBVar[][][] x, int i, int u, int start, int n1) {
 		GRBLinExpr sum = new GRBLinExpr();
-		for(int s = start; s<=start+n1; s++) {
+		for(int s = start+1; s<=start+n1; s++) {
 			//System.out.println("x"+i+s+u);
 			sum.addTerm(1.0, x[i][s][u]);
 		}
@@ -511,16 +521,16 @@ public class TUPWindows {
 		int end = getEnd(window,windowsize);
 		
 		ArrayList<ArrayList<int[]>> solution = new ArrayList<ArrayList<int[]>>();
-		
+		int end1 = (int) ((end > 4*n-3) ? 4*n-3 : end);
 		GRBVar[][][] x = sol.getX();
 		for(int u = 0; u<x[0][0].length; ++u) {
 			ArrayList<int[]> ump = new ArrayList<int[]>();
-			for(int s = begin; s<end+1; ++s) {
+			for(int s = begin; s<end1+1; ++s) {
 				ump.add(new int[2]);
 			}
 			solution.add(ump);
 		}
-		int end1 = (int) ((end > 4*n-3) ? 4*n-3 : end);
+		
 		for (int i = 0; i < x.length; ++i) {
 			for(int s = begin; s<end1+1; ++s) {
 				for(int u = 0; u<x[0][0].length; ++u) {
@@ -538,7 +548,7 @@ public class TUPWindows {
 	/**
 	 * Print de oplossingen van de variabelen die niet 0 zijn.
 	 */
-	private static Solution printSolution(Solution sol) throws GRBException {
+	private static Solution printVars(Solution sol) throws GRBException {
 		GRBModel model = sol.getModel();
 		GRBVar[][][] x = sol.getX();
 		GRBVar[][][][] z = sol.getZ();
@@ -581,10 +591,19 @@ public class TUPWindows {
 	 * Print de oplossing in tabelvorm.
 	 * @throws GRBException 
 	 */
-	private static void printSol(double n, Solution solution,int window, int windowsize) throws GRBException {
+	private static void printSolution(double n, Solution solution,int window, int windowsize) throws GRBException {
 		System.out.println();
 		ArrayList<ArrayList<int[]>> sol = getSolution(n, solution,window,windowsize);
 		for(ArrayList<int[]> list: sol) {
+			for(int[] i: list) {
+				System.out.print("("+i[0]+","+i[1]+") ");
+			}
+			System.out.println();
+		}
+	}
+	
+	public static void printSolution(ArrayList<ArrayList<int[]>> soltable) {
+		for(ArrayList<int[]> list: soltable) {
 			for(int[] i: list) {
 				System.out.print("("+i[0]+","+i[1]+") ");
 			}
@@ -608,11 +627,13 @@ public class TUPWindows {
 	 * Concatenate 2 given solutions.
 	 */
 	public static ArrayList<ArrayList<int[]>> concatSolutions(ArrayList<ArrayList<int[]>> s1, ArrayList<ArrayList<int[]>> s2) {
+		if(s1.isEmpty()) return s2;
+		if(s2.isEmpty()) return s1;
 		ArrayList<ArrayList<int[]>> newSol = new ArrayList<ArrayList<int[]>>();
 		ArrayList<int[]> addAL;
 		for(int i = 0; i<s1.size(); i++) {
 			newSol.add(s1.get(i));
-			addAL = getUmpireByGivenMatch(s1.get(i).get(s1.get(i).size() -1),s2);
+			addAL = s2.get(i);
 			addAL.remove(0);
 			newSol.get(i).addAll(addAL);
 		}
