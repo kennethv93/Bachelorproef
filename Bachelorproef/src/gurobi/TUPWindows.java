@@ -50,9 +50,6 @@ public class TUPWindows {
 	static String[] datasets = {"4", "6", "6a", "6b", "6c", "8", "8a", "8b", "8c", "10", "10a", "10b", "10c","12","14","14a","14b","14c", 
 			"16", "16a", "16b", "16c", "18", "20", "22","24","26","28","30","32"};
 
-	/**
-	 * MAIN METHOD
-	 */
 	public static void main(String[] args) throws IOException, GRBException {		
 		String dataset = (String) JOptionPane.showInputDialog(null, 
 							"Choose a dataset", 
@@ -87,9 +84,7 @@ public class TUPWindows {
 		}
 		return soltable;
 	}
-	/**
-	 * Initialize.
-	 */
+
 	public static Solution initialize(GRBEnv env, int[][] dist, double n, double amountTeams, 
 			double amountSlots, int begin, int end) throws GRBException {
 		// Model
@@ -142,9 +137,6 @@ public class TUPWindows {
 		return new Solution(model,x,y,z);
 	}
 	
-	/**
-	 * EXECUTE METHODE
-	 */
 	public static Solution execute(String dataset, double d1, double d2, int window, int windowsize,Solution prevSol) throws IOException {
 		
 		System.out.println("Dataset: "+dataset);
@@ -182,9 +174,10 @@ public class TUPWindows {
 			addConstraints(sol,opp,n,amountTeams,amountSlots,begin,end,d1,d2,n1,n2);
 			
 			// Cuts
-			if(withCuts) {
-				if(window > 1) {
-					addCuts(prevSol, sol, amountTeams,n,n1,n2, window,begin,end);
+			if(window>1) {
+				addOverlapConstraint(prevSol, sol, amountTeams,n,n1,n2, window,begin,end);
+				if(withCuts) {
+					addOverlapConstraints45(prevSol, sol, amountTeams,n,n1,n2, window,begin,end);
 					System.out.println("Cuts added");
 				}
 			}
@@ -203,10 +196,7 @@ public class TUPWindows {
 		}
 		return sol;
 	}
-	
-	/**
-	 * Voeg alle constraints van de paper toe.
-	 */
+
 	private static void addConstraints(Solution sol,int[][] opp, double n, double amountTeams, double amountSlots, int begin, int end1, 
 			double d1, double d2, double n1, double n2) throws GRBException {
 		
@@ -434,10 +424,7 @@ public class TUPWindows {
 		}}}}}}}
 	}
 
-	/**
-	 * Add cuts.
-	 */
-	private static void addCuts(Solution prevSol, Solution sol, double amountTeams, double n,
+	private static void addOverlapConstraint(Solution prevSol, Solution sol, double amountTeams, double n,
 			double n1, double n2, int window,int begin, int end) throws GRBException {
 		if(sol == null) return;
 		GRBModel model = sol.getModel();
@@ -450,6 +437,13 @@ public class TUPWindows {
 				model.addConstr(x[i][begin][u], GRB.EQUAL, prevX[i][begin][u].get(GRB.DoubleAttr.X), "overlap"+i+begin+u);
 			}
 		}
+	}
+	private static void addOverlapConstraints45(Solution prevSol, Solution sol, double amountTeams, double n,
+			double n1, double n2, int window,int begin, int end) throws GRBException {
+		if(sol == null) return;
+		GRBModel model = sol.getModel();
+		GRBVar[][][] x = sol.getX();
+		GRBVar[][][] prevX = prevSol.getX();
 		
 		// Constraint 5
 		int start5 = (int) ((begin+1-n1 < 0) ? 0 : begin+1-n1); 
@@ -540,9 +534,6 @@ public class TUPWindows {
 //		}
 	}
 
-	/**
-	 * Voer alle datasets uit.
-	 */
 	public static void executeAll(double d1, double d2) throws IOException {
 		for(String s: datasets) {
 			execute(s,d1,d2,1,parseIntDataset(s)*2-2,null);
@@ -552,10 +543,7 @@ public class TUPWindows {
 			System.out.println();
 		}
 	}
-	
-	/**
-	 * Haal de oplossing uit het model.
-	 */
+
 	private static ArrayList<ArrayList<int[]>> getSolution(double n, Solution sol, int window, int windowsize) throws GRBException {
 		
 		int begin = getBegin(window,windowsize);
@@ -585,10 +573,7 @@ public class TUPWindows {
 		
 		return solution;	
 	}
-	
-	/**
-	 * Print de oplossingen van de variabelen die niet 0 zijn.
-	 */
+
 	private static Solution printVars(Solution sol) throws GRBException {
 		GRBModel model = sol.getModel();
 		GRBVar[][][] x = sol.getX();
@@ -624,11 +609,7 @@ public class TUPWindows {
 		}
 		return sol;
 	}
-	
-	/**
-	 * Print de oplossing in tabelvorm.
-	 * @throws GRBException 
-	 */
+
 	@SuppressWarnings("unused")
 	private static void printSolution(double n, Solution solution,int window, int windowsize) throws GRBException {
 		System.out.println();
@@ -694,11 +675,7 @@ public class TUPWindows {
 			System.out.println();
 		}
 	}
-	
-	/**
-	 * Haal het aantal teams uit de String dataset
-	 * bvb. 10c -> 10
-	 */
+
 	public static int parseIntDataset(String dataset) {
 		try {
 			return Integer.parseInt(dataset);
@@ -706,10 +683,7 @@ public class TUPWindows {
 			return Integer.parseInt(dataset.substring(0, dataset.length()-1));
 		}
 	}
-		
-	/**
-	 * Concatenate 2 given solutions.
-	 */
+
 	public static ArrayList<ArrayList<int[]>> concatSolutions(ArrayList<ArrayList<int[]>> s1, ArrayList<ArrayList<int[]>> s2) {
 		if(s1.isEmpty()) return s2;
 		if(s2.isEmpty()) return s1;
@@ -723,10 +697,7 @@ public class TUPWindows {
 		}
 		return newSol;
 	}
-	
-	/**
-	 * Get the umpire according to a given match.
-	 */
+
 	public static ArrayList<int[]> getUmpireByGivenMatch(int[] match, ArrayList<ArrayList<int[]>> table) {
 		ArrayList<int[]> solution = null;
 		for(ArrayList<int[]> u : table) {
@@ -738,10 +709,7 @@ public class TUPWindows {
 		}
 		return solution;
 	}
-	
-	/**
-	 * Check if the table has a next window.
-	 */
+
 	public static boolean hasNextWindow(int amountSlots, int windowSize, int currentWindow) {
 		if(currentWindow == 0) return true;
 		if(windowSize > amountSlots) return false;
@@ -758,17 +726,11 @@ public class TUPWindows {
 		if(slotsLeft <= 0) return false;
 		return true;
 	}
-	
-	/**
-	 * Get begin of window.
-	 */
+
 	public static int getBegin(int window, int windowsize) {
 		return (window-1)*(windowsize-1);
 	}
-	
-	/**
-	 * Get end of window.
-	 */
+
 	public static int getEnd(int window, int windowsize) {
 		int begin = getBegin(window,windowsize);
 		return begin + windowsize - 1;
