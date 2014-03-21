@@ -1,66 +1,46 @@
-package solutionChecker;
-
-import static org.junit.Assert.*;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-
-import org.junit.Before;
-import org.junit.Test;
-
-import datareader.Datareader;
-
-public class SolutionCheckerTest {
-
-	private HashMap<Integer, ArrayList<int[]>> solution;
-
-	@Before
-	public void setUp() throws Exception {
-		solution = new HashMap<Integer,ArrayList<int[]>>();
-		ArrayList<int[]> u1 = new ArrayList<int[]>(); 
-		int[] l1 = {1,3}; int[] l2 = {3,4}; int[] l3 = {1,4}; int[] l4 = {3,1}; int[] l5 = {4,3}; int[] l6 = {2,3};
-		u1.add(l1); u1.add(l2); u1.add(l3); u1.add(l4); u1.add(l5); u1.add(l6);
-		ArrayList<int[]> u2 = new ArrayList<int[]>(); 
-		int[] j1 = {2,4}; int[] j2 = {1,2}; int[] j3 = {3,2}; int[] j4 = {4,2}; int[] j5 = {2,1}; int[] j6 = {4,1};
-		u2.add(j1); u2.add(j2); u2.add(j3); u2.add(j4); u2.add(j5); u2.add(j6); 
-		solution.put(0, u1); solution.put(1, u2);
-	}
-
-	@Test
-	public void test() throws IOException {
-		
-		Datareader dr = new Datareader();
-		dr.getData("C:\\Users\\Kenneth\\Desktop\\dataset.txt");
-		
-		assertTrue(SolutionChecker.check(solution,dr.getDist(),0,0));
-	}
-	
-	@Test
-	public void CheckC4test() throws IOException {
-		ArrayList<Integer> list = new ArrayList<Integer>();
-		list.add(4); 
-		list.add(3); 
-		list.add(2); 
-		list.add(1); 
-		list.add(4); 
-		list.add(1); 
-		assertTrue(SolutionChecker.checkC4(list, 2));
-		assertFalse(SolutionChecker.checkC4(list, 3));
-	}
-	
-	@Test
-	public void CheckC5test() throws IOException {
-		ArrayList<Integer> list = new ArrayList<Integer>();
-		list.add(1); list.add(3);
-		list.add(3); list.add(4);
-		list.add(1); list.add(4);
-		list.add(3); list.add(1);
-		list.add(4); list.add(3);
-		list.add(2); list.add(3);
-		assertTrue(SolutionChecker.checkC5(list, 1));
-		assertFalse(SolutionChecker.checkC5(list, 2));
-		assertFalse(SolutionChecker.checkC5(list, 3));
-	}
-
-}
+//package solutionChecker;
+//
+//import gurobi.TUPWindows;
+//
+//import java.util.ArrayList;
+//
+//import org.junit.Before;
+//
+//public class SolutionCheckerTest {
+//
+//	private ArrayList<ArrayList<int[]>> sol;
+//
+//	@Before
+//	public void setUp() throws Exception {
+//		sol = TUPWindows.getTableSolDecomp("8", 0, 0, 14, true);
+//	}
+//
+//	@Test
+//	public void test() throws IOException {
+//		assertTrue(SolutionChecker.check(sol,0,0) == 0);
+//	}
+//	
+//	@Test
+//	public void CheckC4test() throws IOException {
+//		sol.get(0).get(4)[0] = 1;
+//		assertTrue(SolutionChecker.check(sol,0,0) == 0);
+//	}
+//	
+//	@Test
+//	public void CheckC4test2() throws IOException {
+//		sol.get(0).get(3)[0] = 1;
+//		assertFalse(SolutionChecker.check(sol,0,0) == 0);
+//	}
+//	
+//	@Test
+//	public void CheckC5test() throws IOException {
+//		sol.get(0).get(2)[1] = 2;
+//		assertFalse(SolutionChecker.check(sol,0,0) == 0);
+//	}
+//
+//	@Test
+//	public void CheckC5test2() throws IOException {
+//		sol.get(0).get(3)[1] = 2;
+//		assertTrue(SolutionChecker.check(sol,0,0) == 0);
+//	}
+//}

@@ -14,4 +14,11 @@
 	<natures>
 		<nature>org.eclipse.jdt.core.javanature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>resultaten</name>
+			<type>2</type>
+			<location>C:/Users/Kenneth/Desktop/resultaten</location>
+		</link>
+	</linkedResources>
 </projectDescription>

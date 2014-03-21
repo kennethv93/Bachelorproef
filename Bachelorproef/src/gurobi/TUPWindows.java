@@ -1,4 +1,7 @@
 package gurobi;
+import gurobi.exception.ConstraintException;
+
+import java.io.BufferedWriter;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -6,7 +9,6 @@ import java.util.ArrayList;
 import javax.swing.JOptionPane;
 
 import datareader.Datareader;
-import gurobi.*;
 
 public class TUPWindows {
 
@@ -43,7 +45,7 @@ public class TUPWindows {
 	static int[][] opp;
 	static double cost;
 	static double totalexectime;
-	static DecimalFormat df = new DecimalFormat("#0.00000");
+	static DecimalFormat df = new DecimalFormat("#0.000");
 	
 	static String[] datasets = {"4", "6", "6a", "6b", "6c", "8", "8a", "8b", "8c", "10", "10a", "10b", "10c","12","14","14a","14b","14c", 
 			"16", "16a", "16b", "16c", "18", "20", "22","24","26","28","30","32"};
@@ -51,30 +53,29 @@ public class TUPWindows {
 	/**
 	 * MAIN METHOD
 	 */
-	public static void main(String[] args) throws IOException, GRBException {
-		Object[] options = {"Execute 1 dataset", "Execute all datasets", "Cancel"};
-
-		int choice = JOptionPane.showOptionDialog(null,  "Choose an option.",  "Traveling Umpire Problem", 
-				JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
-		
-		String dataset = null;
-		switch (choice) {
-			case 0: dataset = (String) JOptionPane.showInputDialog(null, 
+	public static void main(String[] args) throws IOException, GRBException {		
+		String dataset = (String) JOptionPane.showInputDialog(null, 
 							"Choose a dataset", 
 							"Traveling Umpire Problem", 
 							JOptionPane.PLAIN_MESSAGE,
 							null,
 							datasets,
 							"4");
-					//System.out.println("\t\t\t\t\t\t\t\t\t"+lb);
-					break;
-			case 1:	executeAll(0,0);
-					break;
-		}
+		//System.out.println("\t\t\t\t\t\t\t\t\t"+lb);
 		
 		String windowsizechoice = JOptionPane.showInputDialog("Give window size, there are "+(parseIntDataset(dataset)*2-2)+" rounds.");
 		int windowsize = Integer.parseInt(windowsizechoice);
 		
+		ArrayList<ArrayList<int[]>> soltable = getTableSolDecomp(dataset, 0, 0, windowsize,true);
+
+		printSolution(soltable);
+		System.out.println("Total cost: "+cost);
+		System.out.println("Total execution time "+df.format(totalexectime)+"s");
+	}
+	
+	public static ArrayList<ArrayList<int[]>> getTableSolDecomp(String dataset, int n1, int n2, int windowsize, boolean cuts) throws IOException, GRBException {
+		cost = 0;
+		withCuts = cuts;
 		int window = 0;
 		Solution sol = null;
 		ArrayList<ArrayList<int[]>> soltable = new ArrayList<ArrayList<int[]>>();
@@ -84,12 +85,8 @@ public class TUPWindows {
 			//printSolution(n,sol,window,windowsize);
 			soltable = concatSolutions(soltable,getSolution(n,sol,window,windowsize));
 		}
-		printSolution(soltable);
-		System.out.println("Total cost: "+cost);
-		System.out.println("Total execution time "+df.format(totalexectime)+"s");
-		//if(dataset != null) execute(dataset,0,0,2,3,prevSol);
+		return soltable;
 	}
-	
 	/**
 	 * Initialize.
 	 */
@@ -108,7 +105,7 @@ public class TUPWindows {
 			for(int u=0; u<n; ++u) {
 				for(int s=0; s<amountSlots; ++s) {
 					x[i][s][u] = 
-							model.addVar(0, 1, 0,type, "x"+(i+1)+(s+1)+(u+1));
+							model.addVar(0, 1, 0,type, "x"+(i)+(s)+(u));
 		}}}
 
 		// Maak variabele z
@@ -195,7 +192,6 @@ public class TUPWindows {
 			// Solve
 			System.out.println("Start solving.");
 			model.optimize();
-			
 			if(printSol) printVars(sol);
 
 			//model.dispose();
@@ -456,18 +452,26 @@ public class TUPWindows {
 		}
 		
 		// Constraint 5
-		int start5 = (int) ((begin+1-n1 < 0) ? 0 : begin+1-n1); //ok
-		int end5 = (int) ((end+1-n1 > begin) ? begin : end+1-n1);
+		int start5 = (int) ((begin+1-n1 < 0) ? 0 : begin+1-n1); 
+		System.out.println("start5: "+start5);
+		//int end5 = (int) ((end+1-n1 > begin) ? begin : end+1-n1);
+		int end5 = (int) begin-1;
+		System.out.println("end5: "+end5);
 		for(int i=0; i<amountTeams;++i){
 			for(int u=0; u<n; ++u) {
-				for(int s=start5; s<end5; ++s) {
+				for(int s=start5; s<=end5; ++s) {
 					GRBLinExpr d4tot = new GRBLinExpr();
-					for(int c=s; c<=s+n1;++c) {
+					int n15 = (int) ((s+n1 > end) ? end : s+n1); 
+					//System.out.print("Added sum: ");
+					for(int c=s; c<=n15;++c) {
 						if(opp[c][i] > 0) {
 							if(c<begin) {
-								d4tot.addTerm(1.0,prevX[i][c][u]);
+								d4tot.addConstant(prevX[i][c][u].get(GRB.DoubleAttr.X));
+								//System.out.print(prevX[i][c][u].get(GRB.DoubleAttr.X));
+								//System.out.print("xprev"+i+c+u+"+");
 							} else {
 								d4tot.addTerm(1.0,x[i][c][u]);
+								//System.out.print("x"+i+c+u+"+");
 							}	
 						}
 					}
@@ -476,17 +480,19 @@ public class TUPWindows {
 		
 		// Constraint 6
 		int start6 = (int) ((begin+1-n2 < 0) ? 0 : begin+1-n2);
-		int end6 = (int) ((end+1-n2 > begin) ? begin : end+1-n2); 
+		//int end6 = (int) ((end+1-n2 > begin) ? begin : end+1-n2);
+		int end6 = (int) begin -1;
 		for(int i=0; i<amountTeams;++i){
 			for(int u=0; u<n; ++u) {
-				for(int s=start6; s<end6; ++s) {
+				for(int s=start6; s<=end6; ++s) {
 					GRBLinExpr d5tot = new GRBLinExpr();
-					for(int c=s; c<=s+n2;++c) {
+					int n26 = (int) (((s+n2) > end) ? end : s+n2);
+					for(int c=s; c<=n26;++c) {
 						d5tot.addTerm(1.0,x[i][c][u]);
 						for(int j=0; j<amountTeams; ++j) {
 							if(opp[c][j] == i+1) {
 								if(c<begin) {
-									d5tot.addTerm(1.0,prevX[j][c][u]);
+									d5tot.addConstant(prevX[j][c][u].get(GRB.DoubleAttr.X));
 								} else {
 									d5tot.addTerm(1.0,x[j][c][u]);
 								}
@@ -532,15 +538,6 @@ public class TUPWindows {
 //				}
 //			}
 //		}
-	}
-
-	private static GRBLinExpr getSumOfX(GRBModel model, GRBVar[][][] x, int i, int u, int start, int n1) {
-		GRBLinExpr sum = new GRBLinExpr();
-		for(int s = start+1; s<=start+n1; s++) {
-			//System.out.println("x"+i+s+u);
-			sum.addTerm(1.0, x[i][s][u]);
-		}
-		return sum;
 	}
 
 	/**
@@ -597,10 +594,7 @@ public class TUPWindows {
 		GRBVar[][][] x = sol.getX();
 		GRBVar[][][][] z = sol.getZ();
 		if (model.get(GRB.IntAttr.Status) == GRB.Status.OPTIMAL) {
-			//System.out.println("Cost: " + model.get(GRB.DoubleAttr.ObjVal));
 			cost += model.get(GRB.DoubleAttr.ObjVal);
-			DecimalFormat df = new DecimalFormat("#0.00000");
-			//System.out.println("Execution time: "+ df.format(model.get(GRB.DoubleAttr.Runtime))+" seconds");
 			totalexectime+=model.get(GRB.DoubleAttr.Runtime);
 			
 			if(printVars) {
@@ -635,6 +629,7 @@ public class TUPWindows {
 	 * Print de oplossing in tabelvorm.
 	 * @throws GRBException 
 	 */
+	@SuppressWarnings("unused")
 	private static void printSolution(double n, Solution solution,int window, int windowsize) throws GRBException {
 		System.out.println();
 		ArrayList<ArrayList<int[]>> sol = getSolution(n, solution,window,windowsize);
@@ -643,6 +638,51 @@ public class TUPWindows {
 				System.out.print("("+i[0]+","+i[1]+") ");
 			}
 			System.out.println();
+		}
+	}
+	
+	public static void writeSolution(BufferedWriter bw, double n, int windowsize, boolean withCuts) throws IOException {
+		bw.write("AMOUNT OF TEAMS: "+n+" AND WINDOW SIZE: "+windowsize); bw.newLine();
+		if(withCuts) {
+			bw.write("\tWITH CUTS:");
+		} else {
+			bw.write("\tWITHOUT CUTS:");
+		}
+		bw.write("infeasible"); bw.newLine();
+		bw.write("-----------------------------------------------------------------------"); bw.newLine();
+	}
+	
+	public static void writeSolution(BufferedWriter bw, double n,ArrayList<ArrayList<int[]>> soltable , int windowsize, boolean printTable) throws GRBException, IOException {
+		bw.write("AMOUNT OF TEAMS: "+n+" AND WINDOW SIZE: "+windowsize); bw.newLine();
+		if(withCuts) {
+			bw.write("\tWITH CUTS:");
+		} else {
+			bw.write("\tWITHOUT CUTS:");
+		}
+		bw.newLine();
+		bw.write("\t\tLower bound: "+cost); bw.newLine();
+		bw.write("\t\tExecution time: "+df.format(totalexectime)+"s"); bw.newLine();
+		if(printTable) {
+						try {
+							solutionChecker.SolutionChecker.check(soltable, 0, 0);
+							writeTable(bw,soltable);
+						} catch (ConstraintException c) {
+							bw.write("\t\t\t"+c.toString().toUpperCase()); bw.newLine();
+							writeTable(bw,soltable);
+						}
+						bw.newLine();
+		}
+		bw.write("-----------------------------------------------------------------------"); bw.newLine();
+		
+	}
+	
+	private static void writeTable(BufferedWriter bw, ArrayList<ArrayList<int[]>> soltable) throws IOException {
+		for(ArrayList<int[]> list: soltable) {
+			bw.write("\t\t\t");
+			for(int[] i: list) {
+				bw.write("("+i[0]+","+i[1]+") ");
+			}
+			bw.newLine();
 		}
 	}
 	
@@ -733,5 +773,15 @@ public class TUPWindows {
 		int begin = getBegin(window,windowsize);
 		return begin + windowsize - 1;
 	}
+	
+//	private static GRBLinExpr getSumOfX(GRBModel model, GRBVar[][][] x, int i, int u, int start, int n1) {
+//	GRBLinExpr sum = new GRBLinExpr();
+//	for(int s = start+1; s<=start+n1; s++) {
+//		//System.out.println("x"+i+s+u);
+//		sum.addTerm(1.0, x[i][s][u]);
+//	}
+//	return sum;
+//}
+	
 }
 
