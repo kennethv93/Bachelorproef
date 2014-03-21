@@ -21,7 +21,7 @@ public class TUPWindows {
 	 */
 	static boolean c2 = true;
 	static boolean c3 = false;
-	static boolean c4 = false; // Contraint 3, werkt niet bij windows!
+	static boolean c4 = false; // Constraint 3, werkt niet bij windows!
 	static boolean c5 = true;
 	static boolean c6 = true;
 	static boolean c7 = false;
@@ -35,6 +35,7 @@ public class TUPWindows {
 	static boolean c17 = true;
 	static boolean c22 = true;
 	static boolean c23 = true;
+	static boolean withCuts = false;
 	
 	// Variabelen
 	static int n;
@@ -77,12 +78,11 @@ public class TUPWindows {
 		int window = 0;
 		Solution sol = null;
 		ArrayList<ArrayList<int[]>> soltable = new ArrayList<ArrayList<int[]>>();
-		System.out.println(soltable.isEmpty());
 		while(hasNextWindow(parseIntDataset(dataset)*2-2,windowsize,window)) {
 			window++;
-			sol = execute(dataset,0,0,window,windowsize,sol);;
+			sol = execute(dataset,0,0,window,windowsize,sol);
+			//printSolution(n,sol,window,windowsize);
 			soltable = concatSolutions(soltable,getSolution(n,sol,window,windowsize));
-			
 		}
 		printSolution(soltable);
 		System.out.println("Total cost: "+cost);
@@ -145,31 +145,6 @@ public class TUPWindows {
 		return new Solution(model,x,y,z);
 	}
 	
-//	/**
-//	 * SOLVE WINDOWS
-//	 */
-//	public static void solveWindows(String dataset, double d1, double d2, int amountSlots, int windowSize) throws IOException {
-//		int currentWindow = 0;
-//		Solution solution = new Solution();
-//		Solution windowSolution = new Solution();
-//		while(hasNextWindow(amountSlots, windowSize, currentWindow)) {
-//			currentWindow++;
-//			windowSolution = execute(dataset, d1, d2, currentWindow, windowSize,solution);
-//			
-//		}
-//	}
-	
-//	/**
-//	 * Calculate the lower bounds.
-//	 */
-//	public static void calculateLowerBounds(String dataset, double d1, double d2, int windowsize) throws IOException {
-//		int window = 0;
-//		while(hasNextWindow(2*parseIntDataset(dataset)-2,windowsize,window)) {
-//			window++;
-//			execute(dataset,d1,d2,window,windowsizeprevSol);
-//		}
-//	}
-	
 	/**
 	 * EXECUTE METHODE
 	 */
@@ -210,8 +185,12 @@ public class TUPWindows {
 			addConstraints(sol,opp,n,amountTeams,amountSlots,begin,end,d1,d2,n1,n2);
 			
 			// Cuts
-			if(window > 1) addCuts(prevSol, sol, amountTeams,n,n1,n2, window,begin,end);
-			System.out.println("Cuts added");
+			if(withCuts) {
+				if(window > 1) {
+					addCuts(prevSol, sol, amountTeams,n,n1,n2, window,begin,end);
+					System.out.println("Cuts added");
+				}
+			}
 			
 			// Solve
 			System.out.println("Start solving.");
@@ -277,24 +256,34 @@ public class TUPWindows {
 		}}}
 		
 		// Constraint 5
-		if(c5) {
+		if(true) {
 			for(int i=0; i<amountTeams;++i){
 				for(int u=0; u<n; ++u) {
-					for(int s=begin; s<end1-n1+1; ++s) {
+					int end5 = (int) ((end1-n1 < begin) ? begin : end1-n1);
+					System.out.println();
+					System.out.print("n: "+n+" end: "+end5);
+					for(int s=begin; s<=end5; ++s) {
+						System.out.print(" s: "+s);
 						GRBLinExpr d4tot = new GRBLinExpr();
-						for(int c=s; c<=s+n1;++c) {
-							d4tot.addTerm(1.0,x[i][c][u]);
+						int n15 = (int) ((end1-n1 < begin) ? end1-begin : n1);
+						for(int c=s; c<=s+n15;++c) {
+							System.out.print(" c: "+c);
+							if(opp[c][i] > 0) {
+								d4tot.addTerm(1.0,x[i][c][u]);
+							}
 						}
 						model.addConstr(d4tot, GRB.LESS_EQUAL, 1, "C5_x"+i+s+u);
 		}}}}
 		
 		// Constraint 6
-		if(c6) {
+		if(true) {
 			for(int i=0; i<amountTeams;++i){
 				for(int u=0; u<n; ++u) {
-					for(int s=begin; s<end1-n2+1; ++s) {
+					int end6 = (int) ((end1-n2 < begin) ? begin : end1-n2);
+					for(int s=begin; s<=end6; ++s) {
 						GRBLinExpr d5tot = new GRBLinExpr();
-						for(int c=s; c<=s+n2;++c) {
+						int n26 = (int) ((end1-n2 < begin) ? end1-begin : n2);
+						for(int c=s; c<=s+n26;++c) {
 							d5tot.addTerm(1.0,x[i][c][u]);
 							for(int j=0; j<amountTeams; ++j) {
 								if(opp[c][j] == i+1) {
@@ -462,7 +451,6 @@ public class TUPWindows {
 		GRBModel model = sol.getModel();
 		GRBVar[][][] x = sol.getX();
 		GRBVar[][][] prevX = prevSol.getX();
-		GRBVar[][][] y = sol.getY(); 
 		
 		// ADD OVERLAP CONSTRAINT
 		for(int u=0; u<n; u++) {
@@ -471,23 +459,83 @@ public class TUPWindows {
 			}
 		}
 		
+		// Constraint 5
+		int start5 = (int) ((begin+1-n1 < 0) ? 0 : begin+1-n1); //ok
+		int end5 = (int) ((end+1-n1 > begin) ? begin : end+1-n1);
+		for(int i=0; i<amountTeams;++i){
+			for(int u=0; u<n; ++u) {
+				for(int s=start5; s<end5; ++s) {
+					GRBLinExpr d4tot = new GRBLinExpr();
+					for(int c=s; c<=s+n1;++c) {
+						if(opp[c][i] > 0) {
+							if(c<begin) {
+								d4tot.addTerm(1.0,prevX[i][c][u]);
+							} else {
+								d4tot.addTerm(1.0,x[i][c][u]);
+							}	
+						}
+					}
+					model.addConstr(d4tot, GRB.LESS_EQUAL, 1, "C5_x"+i+s+u);
+		}}}
+		
+		// Constraint 6
+		int start6 = (int) ((begin+1-n2 < 0) ? 0 : begin+1-n2);
+		int end6 = (int) ((end+1-n2 > begin) ? begin : end+1-n2); 
+		for(int i=0; i<amountTeams;++i){
+			for(int u=0; u<n; ++u) {
+				for(int s=start6; s<end6; ++s) {
+					GRBLinExpr d5tot = new GRBLinExpr();
+					for(int c=s; c<=s+n2;++c) {
+						d5tot.addTerm(1.0,x[i][c][u]);
+						for(int j=0; j<amountTeams; ++j) {
+							if(opp[c][j] == i+1) {
+								if(c<begin) {
+									d5tot.addTerm(1.0,prevX[j][c][u]);
+								} else {
+									d5tot.addTerm(1.0,x[j][c][u]);
+								}
+					}}}
+					model.addConstr(d5tot, GRB.LESS_EQUAL, 1, "C6_x"+i+s+u);
+		}}}
+		
 		// ADD CUTS
-		int end1 = (int) ((end > 4*n-3) ? 4*n-3 : end);
-		int start = (int) ((begin+1-n1 < 0) ? 0 : begin+1-n1);
-		for(int s = start; s<start+n1-2; s++) {
-			for(int u=0; u<n; u++) {
-				for(int i = 0; i<amountTeams; i++) {
-					GRBLinExpr my = new GRBLinExpr();
-					my.addTerm(1000, y[i][s][u]);
-					model.addConstr(getSumOfX(model, x, i, u, start,(int) n1), GRB.LESS_EQUAL, my, "cut1"+i+s+u);
-					
-					GRBLinExpr my2 = new GRBLinExpr();
-					my2.addConstant(1000); my2.addTerm(-1000, y[i][s][u]);
-					model.addConstr(prevX[i][s][u], GRB.LESS_EQUAL, my2, "cut2"+i+s+u);
-					System.out.println("Adding cuts for x"+i+s+u);
-				}
-			}
-		}
+		// constraint 4
+//		int start = (int) ((begin+1-n1 < 0) ? 0 : begin+1-n1);
+//		int end1 = (int) ((start+n1-2 > begin) ? begin : start+1-2);
+//		for(int s = start; s<end1; s++) {
+//			for(int u=0; u<n; u++) {
+//				for(int i = 0; i<amountTeams; i++) {
+//					GRBLinExpr my = new GRBLinExpr();
+//					my.addTerm(1000, y[i][s][u]);
+//					model.addConstr(getSumOfX(model, x, i, u, start,(int) n1), GRB.LESS_EQUAL, my, "cut1"+i+s+u);
+//					
+//					GRBLinExpr my2 = new GRBLinExpr();
+//					my2.addConstant(1000); my2.addTerm(-1000, y[i][s][u]);
+//					model.addConstr(prevX[i][s][u], GRB.LESS_EQUAL, my2, "cut2"+i+s+u);
+//					System.out.println("Adding cuts for x"+i+" "+s+" "+u);
+//				}
+//			}
+//		}
+		
+		// constraint 5
+//		int start5 = (int) ((begin+1-n2< 0) ? 0 : begin+1-n2);
+//		for(int s = start5; s<start5+n2-2; s++) {
+//			for(int u=0; u<n; u++) {
+//				for(int i = 0; i<amountTeams; i++) {
+//					GRBLinExpr my = new GRBLinExpr();
+//					
+//					// team 1
+//					my.addTerm(1000, y[i][s][u]);
+//					model.addConstr(getSumOfX(model, x, i, u, start5,(int) n1), GRB.LESS_EQUAL, my, "cut1"+i+s+u);
+//					
+//					GRBLinExpr my2 = new GRBLinExpr();
+//					my2.addConstant(1000); my2.addTerm(-1000, y[i][s][u]);
+//					model.addConstr(prevX[i][s][u], GRB.LESS_EQUAL, my2, "cut2"+i+s+u);
+//					
+//					// team 2
+//				}
+//			}
+//		}
 	}
 
 	private static GRBLinExpr getSumOfX(GRBModel model, GRBVar[][][] x, int i, int u, int start, int n1) {
