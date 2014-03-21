@@ -35,7 +35,7 @@ public class TUPWindows {
 	static boolean c17 = true;
 	static boolean c22 = true;
 	static boolean c23 = true;
-	static boolean withCuts = false;
+	static boolean withCuts = true;
 	
 	// Variabelen
 	static int n;
@@ -260,14 +260,10 @@ public class TUPWindows {
 			for(int i=0; i<amountTeams;++i){
 				for(int u=0; u<n; ++u) {
 					int end5 = (int) ((end1-n1 < begin) ? begin : end1-n1);
-					System.out.println();
-					System.out.print("n: "+n+" end: "+end5);
 					for(int s=begin; s<=end5; ++s) {
-						System.out.print(" s: "+s);
 						GRBLinExpr d4tot = new GRBLinExpr();
 						int n15 = (int) ((end1-n1 < begin) ? end1-begin : n1);
 						for(int c=s; c<=s+n15;++c) {
-							System.out.print(" c: "+c);
 							if(opp[c][i] > 0) {
 								d4tot.addTerm(1.0,x[i][c][u]);
 							}
