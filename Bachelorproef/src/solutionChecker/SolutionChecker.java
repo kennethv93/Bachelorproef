@@ -32,17 +32,16 @@ public class SolutionChecker {
 				visitedTeams.add(game[0]);
 			}
 			
-			ArrayList<Integer> arrayTeams = new ArrayList<Integer>();
+			ArrayList<int[]> arrayGames = new ArrayList<int[]>();
 			for(int[] game: current) {
-				arrayTeams.add(game[0]);
-				arrayTeams.add(game[1]);
+				arrayGames.add(game);
 			}
 			
 			// constraint 4
 			checkC4(sol.indexOf(current),visitedTeams,p1);
 			
 			// constraint 5
-			checkC5(sol.indexOf(current),arrayTeams,p2);
+			checkC5(sol.indexOf(current),arrayGames,p2);
 			
 			// constraint 3
 			Collections.sort(visitedTeams);
@@ -89,20 +88,43 @@ public class SolutionChecker {
 	 * @param	p2
 	 * @throws ConstraintException 
 	 */
-	public static void checkC5(int umpire, ArrayList<Integer> teams, int p2) throws ConstraintException {
-		for(int i=0; i<=teams.size()-1-(2*p2); i++) {
-			if(i%2==0) {
-				List<Integer> sublist = teams.subList(i+2, (i+2)+2*(p2-1));
-				if(sublist.contains(teams.get(i))) {
-					throw new ConstraintException(umpire,i,5);
-				}
-			} else {
-				List<Integer> sublist = teams.subList(i+1, (i+1)+2*(p2-1));
-				if(sublist.contains(teams.get(i))) {
-					throw new ConstraintException(umpire,i,5);
-				}
+	public static void checkC5(int umpire, ArrayList<int[]> games, int p2) throws ConstraintException {
+		for(int i=0; i<=games.size()-p2; i++) {
+			List<int[]> sublist = games.subList(i+1, i+p2);
+			for(int[] game : sublist){
+				if(game[0] == games.get(i)[0]) throw new ConstraintException(umpire,i,5);
+				if(game[1] == games.get(i)[0]) throw new ConstraintException(umpire,i,5);
 			}
+			for(int[] game : sublist){
+				if(game[0] == games.get(i)[1]) throw new ConstraintException(umpire,i,5);
+				if(game[1] == games.get(i)[1]) throw new ConstraintException(umpire,i,5);
+			}	
 		}
 	}
+	
+//	/**
+//	 * Controleer of in de gegeven teams aan constraint 5 voldaan is.
+//	 * 
+//	 * @param	teams
+//	 * @param	p2
+//	 * @throws ConstraintException 
+//	 */
+//	public static void checkC5(int umpire, ArrayList<Integer> teams, int p2) throws ConstraintException {
+//		for(int i=0; i<=teams.size()-1-(2*p2); i++) {
+//			if(i%2==0) {
+//				List<Integer> sublist = teams.subList(i+2, (i+2)+2*(p2-1));
+//				if(sublist.contains(teams.get(i))) {
+//					throw new ConstraintException(umpire,i,5);
+//				}
+//			} else {
+//				List<Integer> sublist = teams.subList(i+1, (i+1)+2*(p2-1));
+//				if(sublist.contains(teams.get(i))) {
+//					throw new ConstraintException(umpire,i,5);
+//				}
+//			}
+//		}
+//	}
+	
+	
 
 }

@@ -7,10 +7,17 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 public class RunData {
+	
+	/**
+	 * PARAMETERS
+	 */
+	static boolean printTable = true;
+	static int d1 = 11;
+	static int d2 = 3;
 
-//	static String[] datasets = {"4", "6", "6a", "6b", "6c", "8", "8a", "8b", "8c","10", "10a", "10b", "10c","12","14","14a","14b","14c"
+//		static String[] datasets = {//"4", "6", "6a", "6b", "6c", "8", "8a", "8b", "8c","10", "10a", "10b", "10c"};//,"12","14","14a","14b","14c",
 //		"16", "16a", "16b", "16c", "18", "20", "22","24","26","28","30","32"};
-	static String[] datasets = {"6"};
+	static String[] datasets = {"32"};
 	
 	public static void main(String[] args) {
 		ArrayList<ArrayList<int[]>> solution = null;
@@ -24,18 +31,23 @@ public class RunData {
 				BufferedWriter bw = new BufferedWriter(fw);
 				
 				//TUPWindows.parseIntDataset(s)*2-2
-				for(int w = 2; w<=TUPWindows.parseIntDataset(s)*2-2; w++) {
+				for(int w = 2; w<=5; w++) {
+					
 					try{ 
-						solution = TUPWindows.getTableSolDecomp(s, 0, 0, w,false);
-						TUPWindows.writeSolution(bw, TUPWindows.parseIntDataset(s), solution, w,false);
+						solution = TUPWindows.getTableSolDecomp(s, d1, d2, w,false);
+						TUPWindows.writeSolution(bw, TUPWindows.parseIntDataset(s), solution, w,d1,d2,false);
 					} catch (GRBException e) {
 						TUPWindows.writeSolution(bw,TUPWindows.parseIntDataset(s),w,false);
 					}
-					try {
-						solution = TUPWindows.getTableSolDecomp(s, 0, 0, w, true);
-						TUPWindows.writeSolution(bw, TUPWindows.parseIntDataset(s), solution, w,true);
-					} catch (GRBException e) {
-						TUPWindows.writeSolution(bw,TUPWindows.parseIntDataset(s),w,true);
+					if(w!=TUPWindows.parseIntDataset(s)*2-2) {
+						try {
+							solution = TUPWindows.getTableSolDecomp(s,d1,d2, w,true);
+							TUPWindows.writeSolution(bw,TUPWindows.parseIntDataset(s),solution,w,d1,d2,printTable);
+							TUPWindows.relaxed = false;
+						} catch (GRBException | NullPointerException e) {
+							TUPWindows.writeSolution(bw,TUPWindows.parseIntDataset(s),w,printTable);
+							TUPWindows.relaxed = false;
+						}
 					}
 					
 				}

@@ -1,15 +1,18 @@
-package gurobi;
+package ga;
+import gurobi.*;
 import gurobi.exception.ConstraintException;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Random;
+
 import javax.swing.JOptionPane;
 
 import datareader.Datareader;
 
-public class TUPWindows {
+public class GAWindows {
 
 	static boolean relaxation = false;
 	static boolean printSol = true;
@@ -34,7 +37,6 @@ public class TUPWindows {
 	static int[][] opp;
 	static double cost;
 	static double totalexectime;
-	static boolean relaxed = false;
 	static DecimalFormat df = new DecimalFormat("#0.000");
 	
 	static String[] datasets = {"4", "6", "6a", "6b", "6c", "8", "8a", "8b", "8c", "10", "10a", "10b", "10c","12","14","14a","14b","14c", 
@@ -61,7 +63,7 @@ public class TUPWindows {
 		System.out.println("Total execution time "+df.format(totalexectime)+"s");
 	}
 	
-	public static ArrayList<ArrayList<int[]>> getTableSolDecomp(String dataset, int d1, int d2, int windowsize, boolean cuts) throws IOException, GRBException {
+	public static ArrayList<ArrayList<int[]>> getTableSolDecomp(String dataset, int n1, int n2, int windowsize, boolean cuts) throws IOException, GRBException {
 		cost = 0;
 		withOverlapConstraints = cuts;
 		//int window = 0;
@@ -71,8 +73,8 @@ public class TUPWindows {
 		ArrayList<Integer> bounds = getBounds(parseIntDataset(dataset)*2-2,windowsize);
 		for(int i = 0; i<bounds.size()-1;i++) {
 			//window++;
-			sol = execute(dataset,d1,d2,bounds.get(i),bounds.get(i+1),sol);
-			printSolution(getSolution(n,sol,bounds.get(i),bounds.get(i+1)));
+			sol = execute(dataset,0,0,bounds.get(i),bounds.get(i+1),sol);
+			//printSolution(n,sol,window,windowsize);
 			soltable = concatSolutions(soltable,getSolution(n,sol,bounds.get(i),bounds.get(i+1)));
 		}
 		return soltable;
@@ -173,25 +175,19 @@ public class TUPWindows {
 			addConstraints(sol,opp,n,amountTeams,amountSlots,begin,end,d1,d2,n1,n2);
 			
 			// Cuts
-			if(begin != 0) {
-				addOverlapConstraint(prevSol, sol, amountTeams,n,n1,n2, begin,end);
-				if(withOverlapConstraints) {
-					addOverlapConstraints45(prevSol, sol, amountTeams,n,n1,n2, begin,end);
-					//System.out.println("Cuts added");
-				}
-			}
+//			if(begin != 0) {
+//				//addOverlapConstraint(prevSol, sol, amountTeams,n,n1,n2, begin,end);
+//				if(withOverlapConstraints) {
+//					addInfeasibility(prevSol, sol, amountTeams,n,n1,n2, begin,end);
+//					//System.out.println("Cuts added");
+//				}
+//			}
 						
 			// Solve
 			//System.out.println("Start solving.");
 			model.optimize();
-			if( model.get(GRB.IntAttr.Status) == GRB.Status.INFEASIBLE) {
-				model.feasRelax(GRB.FEASRELAX_LINEAR, false, false, true);
-				relaxed = true;
-			}
-			model.optimize();
-			XCurrSol = getXSol(sol,amountTeams,amountSlots,n);
 			if(printSol) printVars(sol);
-			
+			XCurrSol = getXSol(sol,amountTeams,amountSlots,n);
 			// Concat previous solutions
 			concatPreviousSolution(prevSol,XCurrSol, n,(int) amountTeams,(int) amountSlots,begin);
 			
@@ -370,9 +366,8 @@ public class TUPWindows {
 		 */
 		
 		// Constraint 15
-		if(c15 && begin == 0) {
-			//Random rand = new Random();
-			//int k = rand.nextInt((int) ((4*n-2-1)+1));
+		if(c15) {
+			
 			int k = begin;
 
 			ArrayList<int[]> venues = new ArrayList<int[]>();
@@ -381,6 +376,30 @@ public class TUPWindows {
 				if(opp[k][i] > 0) {
 					int[] venue = {i,umpire};
 					umpire++;
+					venues.add(venue);
+				}
+			}
+			
+			for(int[] v: venues) {
+				GRBLinExpr d15tot = new GRBLinExpr();
+				d15tot.addTerm(1.0, x[v[0]][k][v[1]]);
+				model.addConstr(d15tot, GRB.EQUAL, 1, "C15"+v[0]+v[1]);
+			}
+			
+			Random rand = new Random();
+			k = rand.nextInt((int) (4*n-2));
+			 // make umpire list
+			ArrayList<Integer> umpires = new ArrayList<Integer>();
+			for(int u=0; u<n;u++) {
+				umpires.add(u);
+			}
+			venues = new ArrayList<int[]>();
+			//umpire = 0;
+			for(int i=0; i<amountTeams; i++) {
+				if(opp[k][i] > 0) {
+					int u = rand.nextInt(umpires.size());
+					int[] venue = {i,umpires.get(u)};
+					umpires.remove(u);
 					venues.add(venue);
 				}
 			}
@@ -440,115 +459,37 @@ public class TUPWindows {
 		}}}}}}}
 	}
 
-	private static void addOverlapConstraint(double[][][] prevX, Solution sol, double amountTeams, double n,
-			double n1, double n2, int begin, int end) throws GRBException {
-		if(sol == null) return;
-		GRBModel model = sol.getModel();
-		GRBVar[][][] x = sol.getX();
-		
-		// ADD OVERLAP CONSTRAINT
-		for(int u=0; u<n; u++) {
-			for(int i=0; i<amountTeams; i++) {
-				model.addConstr(x[i][begin][u], GRB.EQUAL, prevX[i][begin][u], "overlap"+i+begin+u);
-			}
-		}
-	}
+//	private static void addOverlapConstraint(double[][][] prevX, Solution sol, double amountTeams, double n,
+//			double n1, double n2, int begin, int end) throws GRBException {
+//		if(sol == null) return;
+//		GRBModel model = sol.getModel();
+//		GRBVar[][][] x = sol.getX();
+//		
+//		// ADD OVERLAP CONSTRAINT
+//		for(int u=0; u<n; u++) {
+//			for(int i=0; i<amountTeams; i++) {
+//				model.addConstr(x[i][begin][u], GRB.EQUAL, prevX[i][begin][u], "overlap"+i+begin+u);
+//			}
+//		}
+//	}
 	
-	private static void addOverlapConstraints45(double[][][] XPrevSol, Solution sol, double amountTeams, double n,
+	private static void addInfeasibility(double[][][] XPrevSol, Solution sol, double amountTeams, double n,
 			double n1, double n2, int begin, int end) throws GRBException {
 		if(sol == null) return;
 		GRBModel model = sol.getModel();
 		GRBVar[][][] x = sol.getX();
 		
-		// Constraint 5
-		int start5 = (int) ((begin+1-n1 < 0) ? 0 : begin+1-n1); 
-		//System.out.println("start5: "+start5);
-		//int end5 = (int) ((end+1-n1 > begin) ? begin : end+1-n1);
-		int end5 = (int) begin-1;
-		//System.out.println("end5: "+end5);
-		for(int i=0; i<amountTeams;++i){
-			for(int u=0; u<n; ++u) {
-				for(int s=start5; s<=end5; ++s) {
-					GRBLinExpr d4tot = new GRBLinExpr();
-					int n15 = (int) ((s+n1 > end) ? end : s+n1); 
-					for(int c=s; c<=n15;++c) {
-						if(opp[c][i] > 0) {
-							if(c<begin) {
-								d4tot.addConstant(XPrevSol[i][c][u]);
-							} else {
-								d4tot.addTerm(1.0,x[i][c][u]);
-							}	
-						}
-					}
-					model.addConstr(d4tot, GRB.LESS_EQUAL, 1, "C5_x"+i+s+u);
-		}}}
+		Random rand = new Random();
+		rand.nextInt((int) amountTeams);
 		
-		// Constraint 6
-		int start6 = (int) ((begin+1-n2 < 0) ? 0 : begin+1-n2);
-		System.out.println("start 6: "+start6);
-		//int end6 = (int) ((end+1-n2 > begin) ? begin : end+1-n2);
-		int end6 = (int) begin -1;
-		System.out.println("end 6: "+end6);
-		for(int i=0; i<amountTeams;++i){
-			for(int u=0; u<n; ++u) {
-				for(int s=start6; s<=end6; ++s) {
-					GRBLinExpr d5tot = new GRBLinExpr();
-					int n26 = (int) (((s+n2) > end) ? end : s+n2);
-					for(int c=s; c<=n26;++c) {
-						if(c<begin) {
-							d5tot.addConstant(XPrevSol[i][c][u]);
-						} else {
-							d5tot.addTerm(1.0,x[i][c][u]);
-						}
-						for(int j=0; j<amountTeams; ++j) {
-							if(opp[c][j] == i+1) {
-								if(c<begin) {
-									d5tot.addConstant(XPrevSol[j][c][u]);
-								} else {
-									d5tot.addTerm(1.0,x[j][c][u]);
-								}
-					}}}
-					model.addConstr(d5tot, GRB.LESS_EQUAL, 1, "C6_x"+i+s+u);
-		}}}
+		Random rand2 = new Random();
+		rand.nextInt((int) ((4*n-2-1)+1));
 		
-		// ADD CUTS
-		// constraint 4
-//		int start = (int) ((begin+1-n1 < 0) ? 0 : begin+1-n1);
-//		int end1 = (int) ((start+n1-2 > begin) ? begin : start+1-2);
-//		for(int s = start; s<end1; s++) {
-//			for(int u=0; u<n; u++) {
-//				for(int i = 0; i<amountTeams; i++) {
-//					GRBLinExpr my = new GRBLinExpr();
-//					my.addTerm(1000, y[i][s][u]);
-//					model.addConstr(getSumOfX(model, x, i, u, start,(int) n1), GRB.LESS_EQUAL, my, "cut1"+i+s+u);
-//					
-//					GRBLinExpr my2 = new GRBLinExpr();
-//					my2.addConstant(1000); my2.addTerm(-1000, y[i][s][u]);
-//					model.addConstr(prevX[i][s][u], GRB.LESS_EQUAL, my2, "cut2"+i+s+u);
-//					System.out.println("Adding cuts for x"+i+" "+s+" "+u);
-//				}
-//			}
-//		}
+		Random rand3 = new Random();
+		rand.nextInt((int) (n+1));
 		
-		// constraint 5
-//		int start5 = (int) ((begin+1-n2< 0) ? 0 : begin+1-n2);
-//		for(int s = start5; s<start5+n2-2; s++) {
-//			for(int u=0; u<n; u++) {
-//				for(int i = 0; i<amountTeams; i++) {
-//					GRBLinExpr my = new GRBLinExpr();
-//					
-//					// team 1
-//					my.addTerm(1000, y[i][s][u]);
-//					model.addConstr(getSumOfX(model, x, i, u, start5,(int) n1), GRB.LESS_EQUAL, my, "cut1"+i+s+u);
-//					
-//					GRBLinExpr my2 = new GRBLinExpr();
-//					my2.addConstant(1000); my2.addTerm(-1000, y[i][s][u]);
-//					model.addConstr(prevX[i][s][u], GRB.LESS_EQUAL, my2, "cut2"+i+s+u);
-//					
-//					// team 2
-//				}
-//			}
-//		}
+		GRBLinExpr feas = new GRBLinExpr();
+		
 	}
 
 	public static void executeAll(double d1, double d2) throws IOException {
@@ -649,28 +590,22 @@ public class TUPWindows {
 		bw.write("-----------------------------------------------------------------------"); bw.newLine();
 	}
 	
-	public static void writeSolution(BufferedWriter bw, double n,ArrayList<ArrayList<int[]>> soltable , int windowsize, int n1,int n2, boolean printTable) throws GRBException, IOException {
-		bw.write("AMOUNT OF TEAMS: "+n+", WINDOW SIZE: "+windowsize+", d1 = "+n1+", d2 = "+n2); bw.newLine();
+	public static void writeSolution(BufferedWriter bw, double n,ArrayList<ArrayList<int[]>> soltable , int windowsize, boolean printTable) throws GRBException, IOException {
+		bw.write("AMOUNT OF TEAMS: "+n+" AND WINDOW SIZE: "+windowsize); bw.newLine();
 		if(withOverlapConstraints) {
-			bw.write("\tWITH OVERLAP CONSTRAINTS:");
+			bw.write("\tWITH CUTS:");
 		} else {
-			bw.write("\tWITHOUT OVERLAP CONSTRAINTS:");
-			relaxed = true;
+			bw.write("\tWITHOUT CUTS:");
 		}
 		bw.newLine();
-		if(!relaxed) {
-			bw.write("\t\tCost: "+cost); bw.newLine();
-		} else {
-			bw.write("\t\tLOWER BOUND: "+cost); bw.newLine();
-		}
+		bw.write("\t\tCost: "+cost); bw.newLine();
 		bw.write("\t\tExecution time: "+df.format(totalexectime)+"s"); bw.newLine();
 		if(printTable) {
 						try {
 							solutionChecker.SolutionChecker.check(soltable, 0, 0);
-							//bw.write("\t\t\tFEASIBLE SOLUTION"); bw.newLine();
 							writeTable(bw,soltable);
 						} catch (ConstraintException c) {
-							//bw.write("\t\t\t"+c.toString().toUpperCase()); bw.newLine();
+							bw.write("\t\t\t"+c.toString().toUpperCase()); bw.newLine();
 							writeTable(bw,soltable);
 						}
 						bw.newLine();

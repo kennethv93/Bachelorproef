@@ -8,14 +8,14 @@ import org.junit.Test;
 
 public class TestTUPWindows {
 
-	@Test
-	public void testHasNextWindow() {
-		assertTrue(TUPWindows.hasNextWindow(6, 2, 4));
-		assertFalse(TUPWindows.hasNextWindow(10, 8, 2));
-		assertTrue(TUPWindows.hasNextWindow(21, 5, 3));
-		assertTrue(TUPWindows.hasNextWindow(21, 5, 4));
-		assertFalse(TUPWindows.hasNextWindow(21, 5, 5));
-	}
+//	@Test
+//	public void testHasNextWindow() {
+//		assertTrue(TUPWindows.hasNextWindow(6, 2, 4));
+//		assertFalse(TUPWindows.hasNextWindow(10, 8, 2));
+//		assertTrue(TUPWindows.hasNextWindow(21, 5, 3));
+//		assertTrue(TUPWindows.hasNextWindow(21, 5, 4));
+//		assertFalse(TUPWindows.hasNextWindow(21, 5, 5));
+//	}
 	
 	@Test
 	public void testConcatSolutions() {
@@ -31,8 +31,8 @@ public class TestTUPWindows {
 		ArrayList<ArrayList<int[]>> kak2 = new ArrayList<ArrayList<int[]>>();
 		ArrayList<int[]> ul21 = new ArrayList<int[]>();
 		ArrayList<int[]> ul22 = new ArrayList<int[]>();
-		ul21.add(u22); ul21.add(u23); kak2.add(ul21);
-		ul22.add(u12); ul22.add(u13); kak2.add(ul22);
+		ul21.add(u12); ul21.add(u13); kak2.add(ul21);
+		ul22.add(u22); ul22.add(u23); kak2.add(ul22);
 		
 		ArrayList<ArrayList<int[]>> sol = new ArrayList<ArrayList<int[]>>();
 		ArrayList<int[]> usol1 = new ArrayList<int[]>();
