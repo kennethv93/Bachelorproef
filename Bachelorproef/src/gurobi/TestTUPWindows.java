@@ -45,8 +45,8 @@ public class TestTUPWindows {
 	
 	@Test
 	public void testPrintSolution() {
-		int[] u11 = {1,2}; int[] u12 = {3,4}; int[] u13 = {5,6};
-		int[] u21 = {7,8}; int[] u22 = {9,10}; int[] u23 = {11,12};
+		int[] u11 = {1,2}; int[] u12 = {3,4}; 
+		int[] u21 = {7,8}; int[] u22 = {9,10}; 
 		
 		ArrayList<ArrayList<int[]>> kak1 = new ArrayList<ArrayList<int[]>>();
 		ArrayList<int[]> ul11 = new ArrayList<int[]>();

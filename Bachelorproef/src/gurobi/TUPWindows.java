@@ -32,7 +32,7 @@ public class TUPWindows {
 	static int n;
 	static int[][] dist;
 	static int[][] opp;
-	static double cost;
+	//static double cost;
 	static double totalexectime;
 	static boolean relaxed = false;
 	static DecimalFormat df = new DecimalFormat("#0.000");
@@ -57,12 +57,12 @@ public class TUPWindows {
 
 		// PRINT
 		printSolution(soltable);
-		System.out.println("Total cost: "+cost);
+		//System.out.println("Total cost: "+cost);
 		System.out.println("Total execution time "+df.format(totalexectime)+"s");
 	}
 	
 	public static ArrayList<ArrayList<int[]>> getTableSolDecomp(String dataset, int d1, int d2, int windowsize, boolean cuts) throws IOException, GRBException {
-		cost = 0;
+		//cost = 0;
 		withOverlapConstraints = cuts;
 		//int window = 0;
 		double[][][] sol = null;
@@ -79,7 +79,7 @@ public class TUPWindows {
 	}
 	
 	public static ArrayList<ArrayList<int[]>> getTableSolDecompIncreasingWS(String dataset, int n1, int n2, boolean cuts) throws IOException, GRBException {
-		cost = 0;
+		//cost = 0;
 		withOverlapConstraints = cuts;
 		double[][][] sol = null;
 		ArrayList<ArrayList<int[]>> soltable = new ArrayList<ArrayList<int[]>>();
@@ -93,7 +93,7 @@ public class TUPWindows {
 	}
 
 	public static Solution initialize(GRBEnv env, int[][] dist, double n, double amountTeams, 
-			double amountSlots, int begin, int end) throws GRBException {
+			double amountSlots, int begin, int end, double[][][] prevSol) throws GRBException {
 		// Model
 		GRBModel model = new GRBModel(env);
 		model.set(GRB.StringAttr.ModelName, "TUP");
@@ -123,7 +123,7 @@ public class TUPWindows {
 		// Update model om x,y en z te integreren
 		model.update();
 		
-		// Stel objective in:
+		// OBJECTIVE FUNCTION:
 		GRBLinExpr expr = new GRBLinExpr();
 		for(int i=0; i<amountTeams; ++i) {
 			for(int j=0; j<amountTeams; ++j) {
@@ -131,6 +131,40 @@ public class TUPWindows {
 					for(int s=0; s<amountSlots-1; ++s) {
 						expr.addTerm(dist[i][j],z[i][j][s][u]);
 		}}}}
+		
+		// CONSTRAINT 3
+//		int PENALTY = 10000000;
+//		if(begin != 0) {
+//			for(int u=0; u<n; ++u) {				
+//				for(int i=0; i<amountTeams; ++i) {
+//					int teller = 0;
+//					for(int s=0; s<begin;++s) {
+//						if(prevSol[i][s][u] == 1) teller++;
+//					}
+//					System.out.println((i+1)+": "+teller);
+//					for(int s=begin+1;s<=end;++s) {
+//						expr.addTerm(teller*PENALTY, x[i][s][u]);
+//					}
+//				}
+//			}
+//		}
+		
+		int PENALTY = 10000;
+		if(begin != 0) {
+			for(int u=0; u<n; ++u) {				
+				for(int i=0; i<amountTeams; ++i) {
+					int teller = 0;
+					for(int s=0; s<=begin;++s) {
+						if(prevSol[i][s][u] == 1) teller++;
+					}
+					for(int s=begin+1;s<=end;++s) {
+						if(teller == 0) expr.addTerm(-PENALTY, x[i][s][u]);
+					}
+				}
+			}
+		}
+		
+		// SET OBJECTIVE
 		model.setObjective(expr, GRB.MINIMIZE);
 		return new Solution(model,x,z);
 	}
@@ -166,7 +200,7 @@ public class TUPWindows {
 			env.set(GRB.DoubleParam.TimeLimit, 10800);
 			if(!printToConsole) env.set(GRB.IntParam.OutputFlag, 0);
 			
-			Solution sol = initialize(env,dist,n,amountTeams,amountSlots,begin,end);
+			Solution sol = initialize(env,dist,n,amountTeams,amountSlots,begin,end,prevSol);
 			GRBModel model = sol.getModel();
 			 
 			//model.set(GRB.IntAttr.ModelSense, 1);
@@ -510,45 +544,6 @@ public class TUPWindows {
 					}}}
 					model.addConstr(d5tot, GRB.LESS_EQUAL, 1, "C6_x"+i+s+u);
 		}}}
-		
-		// ADD CUTS
-		// constraint 4
-//		int start = (int) ((begin+1-n1 < 0) ? 0 : begin+1-n1);
-//		int end1 = (int) ((start+n1-2 > begin) ? begin : start+1-2);
-//		for(int s = start; s<end1; s++) {
-//			for(int u=0; u<n; u++) {
-//				for(int i = 0; i<amountTeams; i++) {
-//					GRBLinExpr my = new GRBLinExpr();
-//					my.addTerm(1000, y[i][s][u]);
-//					model.addConstr(getSumOfX(model, x, i, u, start,(int) n1), GRB.LESS_EQUAL, my, "cut1"+i+s+u);
-//					
-//					GRBLinExpr my2 = new GRBLinExpr();
-//					my2.addConstant(1000); my2.addTerm(-1000, y[i][s][u]);
-//					model.addConstr(prevX[i][s][u], GRB.LESS_EQUAL, my2, "cut2"+i+s+u);
-//					System.out.println("Adding cuts for x"+i+" "+s+" "+u);
-//				}
-//			}
-//		}
-		
-		// constraint 5
-//		int start5 = (int) ((begin+1-n2< 0) ? 0 : begin+1-n2);
-//		for(int s = start5; s<start5+n2-2; s++) {
-//			for(int u=0; u<n; u++) {
-//				for(int i = 0; i<amountTeams; i++) {
-//					GRBLinExpr my = new GRBLinExpr();
-//					
-//					// team 1
-//					my.addTerm(1000, y[i][s][u]);
-//					model.addConstr(getSumOfX(model, x, i, u, start5,(int) n1), GRB.LESS_EQUAL, my, "cut1"+i+s+u);
-//					
-//					GRBLinExpr my2 = new GRBLinExpr();
-//					my2.addConstant(1000); my2.addTerm(-1000, y[i][s][u]);
-//					model.addConstr(prevX[i][s][u], GRB.LESS_EQUAL, my2, "cut2"+i+s+u);
-//					
-//					// team 2
-//				}
-//			}
-//		}
 	}
 
 	public static void executeAll(double d1, double d2) throws IOException {
@@ -589,13 +584,23 @@ public class TUPWindows {
 		
 		return solution;	
 	}
+	
+	public static int getCost(double n, ArrayList<ArrayList<int[]>> sol) {
+		int cost = 0;
+		for(ArrayList<int[]> umpire : sol) {
+			for(int s=1; s<umpire.size(); s++) {
+				cost+=dist[umpire.get(s)[0]-1][umpire.get(s-1)[0]-1];
+			}
+		}
+		return cost;
+	}
 
 	private static Solution printVars(Solution sol) throws GRBException {
 		GRBModel model = sol.getModel();
 		GRBVar[][][] x = sol.getX();
 		GRBVar[][][][] z = sol.getZ();
 		if (model.get(GRB.IntAttr.Status) == GRB.Status.OPTIMAL) {
-			cost += model.get(GRB.DoubleAttr.ObjVal);
+			//cost += model.get(GRB.DoubleAttr.ObjVal);
 			totalexectime+=model.get(GRB.DoubleAttr.Runtime);
 			
 			if(printVars) {
@@ -625,18 +630,6 @@ public class TUPWindows {
 		}
 		return sol;
 	}
-
-//	@SuppressWarnings("unused")
-//	private static void printSolution(double n, Solution solution,int window, int windowsize) throws GRBException {
-//		System.out.println();
-//		ArrayList<ArrayList<int[]>> sol = getSolution(n, solution,window,windowsize);
-//		for(ArrayList<int[]> list: sol) {
-//			for(int[] i: list) {
-//				System.out.print("("+i[0]+","+i[1]+") ");
-//			}
-//			System.out.println();
-//		}
-//	}
 	
 	public static void writeSolution(BufferedWriter bw, double n, int windowsize, boolean withCuts) throws IOException {
 		bw.write("AMOUNT OF TEAMS: "+n+" AND WINDOW SIZE: "+windowsize); bw.newLine();
@@ -649,8 +642,8 @@ public class TUPWindows {
 		bw.write("-----------------------------------------------------------------------"); bw.newLine();
 	}
 	
-	public static void writeSolution(BufferedWriter bw, double n,ArrayList<ArrayList<int[]>> soltable , int windowsize, int n1,int n2, boolean printTable) throws GRBException, IOException {
-		bw.write("AMOUNT OF TEAMS: "+n+", WINDOW SIZE: "+windowsize+", d1 = "+n1+", d2 = "+n2); bw.newLine();
+	public static void writeSolution(BufferedWriter bw, double n,ArrayList<ArrayList<int[]>> soltable , int windowsize, int d1,int d2, boolean printTable) throws GRBException, IOException {
+		bw.write("AMOUNT OF TEAMS: "+n+", WINDOW SIZE: "+windowsize+", d1 = "+d1+", d2 = "+d2); bw.newLine();
 		if(withOverlapConstraints) {
 			bw.write("\tWITH OVERLAP CONSTRAINTS:");
 		} else {
@@ -659,18 +652,19 @@ public class TUPWindows {
 		}
 		bw.newLine();
 		if(!relaxed) {
-			bw.write("\t\tCost: "+cost); bw.newLine();
+			//bw.write("\t\tCost: "+cost); bw.newLine();
+			bw.write("\t\tCost: "+getCost(n,soltable));
 		} else {
-			bw.write("\t\tLOWER BOUND: "+cost); bw.newLine();
+			//bw.write("\t\tLOWER BOUND: "+getCost(n,soltable)); bw.newLine();
 		}
 		bw.write("\t\tExecution time: "+df.format(totalexectime)+"s"); bw.newLine();
 		if(printTable) {
 						try {
-							solutionChecker.SolutionChecker.check(soltable, 0, 0);
-							//bw.write("\t\t\tFEASIBLE SOLUTION"); bw.newLine();
+							solutionChecker.SolutionChecker.check(soltable, d1, d2);
+							bw.write("\t\t\tFEASIBLE SOLUTION"); bw.newLine();
 							writeTable(bw,soltable);
 						} catch (ConstraintException c) {
-							//bw.write("\t\t\t"+c.toString().toUpperCase()); bw.newLine();
+							bw.write("\t\t\t"+c.toString().toUpperCase()); bw.newLine();
 							writeTable(bw,soltable);
 						}
 						bw.newLine();
@@ -768,6 +762,10 @@ public class TUPWindows {
 			acc = (acc/2 < 2) ? 2 : acc/2;
 		}
 		return bounds;
+	}
+	
+	public static void lagrangeanRelaxation() {
+		
 	}
 	
 }
