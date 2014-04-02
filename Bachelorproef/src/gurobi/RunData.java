@@ -30,8 +30,9 @@ public class RunData {
 				FileWriter fw = new FileWriter(file.getAbsoluteFile());
 				BufferedWriter bw = new BufferedWriter(fw);
 				
-				//TUPWindows.parseIntDataset(s)*2-2
-				for(int w = 2; w<=2; w++) {
+				//Kies voor welke windowsizes er gerund moet worden
+					// voor alle windowsizes: TUPWindows.parseIntDataset(s)*2-2
+				for(int w = 6; w<=6; w++) {
 					
 //					try{ 
 //						solution = TUPWindows.getTableSolDecomp(s, d1, d2, w,false);
