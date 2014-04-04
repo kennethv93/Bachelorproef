@@ -15,6 +15,7 @@ public class TUPWindows {
 	static boolean printVars = false;
 	static boolean printToConsole = true;
 	static double timeLimit = 1080; // in seconden
+	static int penalty = 1000;
 	
 	// CONSTRAINTS
 	static boolean c2 = true;		static boolean c3 = false;		static boolean c4 = false;
@@ -98,7 +99,6 @@ public class TUPWindows {
 		}}}}
 		
 		// CONSTRAINT 3	
-		int PENALTY = 1000;
 		if(begin != 0) {
 			for(int u=0; u<n; ++u) {				
 				for(int i=0; i<amountTeams; ++i) {
@@ -107,7 +107,7 @@ public class TUPWindows {
 						if(prevSol[i][s][u] == 1) teller++;
 					}
 					for(int s=begin+1;s<=end;++s) {
-						if(teller == 0) expr.addTerm(-PENALTY, x[i][s][u]);
+						if(teller == 0) expr.addTerm(-penalty, x[i][s][u]);
 					}
 				}
 			}

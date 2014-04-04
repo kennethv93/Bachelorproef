@@ -3,7 +3,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 import datareader.Datareader;
-import gurobi.*;
 
 public class TUP {
 
