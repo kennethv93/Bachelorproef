@@ -1,6 +1,7 @@
-package gurobi;
+package gurobi.test;
 
 import static org.junit.Assert.*;
+import gurobi.TUPWindows;
 
 import java.util.ArrayList;
 
