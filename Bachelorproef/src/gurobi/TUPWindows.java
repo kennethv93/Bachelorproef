@@ -15,7 +15,7 @@ public class TUPWindows {
 	static boolean printVars = false;
 	static boolean printToConsole = true;
 	static double timeLimit = 1080; // in seconden
-	static int penalty = 1000;
+	static int penalty;
 	
 	// CONSTRAINTS
 	static boolean c2 = true;		static boolean c3 = false;		static boolean c4 = false;
@@ -40,9 +40,10 @@ public class TUPWindows {
 	 * Oplossen via decompositie
 	 */
 	public static ArrayList<ArrayList<int[]>> getTableSolDecomp(String dataset, int d1, int d2, 
-			int windowsize, boolean overlapConstraints) throws IOException, GRBException {
-		
+			int windowsize, boolean overlapConstraints, int pen) throws IOException, GRBException {
+		penalty = pen;
 		withOverlapConstraints = overlapConstraints;
+		totalexectime = 0;
 		double[][][] sol = null;
 		ArrayList<ArrayList<int[]>> soltable = new ArrayList<ArrayList<int[]>>();
 		ArrayList<Integer> bounds = getBounds(parseIntDataset(dataset)*2-2,windowsize);
@@ -107,7 +108,11 @@ public class TUPWindows {
 						if(prevSol[i][s][u] == 1) teller++;
 					}
 					for(int s=begin+1;s<=end;++s) {
-						if(teller == 0) expr.addTerm(-penalty, x[i][s][u]);
+						if(teller == 0) {
+							expr.addTerm(-Math.sqrt(begin)*penalty, x[i][s][u]);
+						} else {
+							//expr.addTerm(teller*penalty, x[i][s][u]);
+						}
 					}
 				}
 			}
@@ -245,7 +250,7 @@ public class TUPWindows {
 		}}}
 		
 		// Constraint 5
-		if(true) {
+		if(c5) {
 			for(int i=0; i<amountTeams;++i){
 				for(int u=0; u<n; ++u) {
 					int end5 = (int) ((end1-n1 < begin) ? begin : end1-n1);
@@ -261,7 +266,7 @@ public class TUPWindows {
 		}}}}
 		
 		// Constraint 6
-		if(true) {
+		if(c6) {
 			for(int i=0; i<amountTeams;++i){
 				for(int u=0; u<n; ++u) {
 					int end6 = (int) ((end1-n2 < begin) ? begin : end1-n2);
@@ -645,7 +650,8 @@ public class TUPWindows {
 	}
 	
 	public static void writeSolution(BufferedWriter bw, double n,ArrayList<ArrayList<int[]>> soltable , int windowsize, int d1,int d2, boolean printTable) throws GRBException, IOException {
-		bw.write("AMOUNT OF TEAMS: "+n+", WINDOW SIZE: "+windowsize+", d1 = "+d1+", d2 = "+d2+", time limit/window = "+timeLimit+"s"); bw.newLine();
+		bw.write("AMOUNT OF TEAMS: "+n+", WINDOW SIZE: "+windowsize+", d1 = "+d1+", d2 = "+d2+", time limit/window = "+timeLimit+"s"+
+					", penalty: "+penalty); bw.newLine();
 		if(withOverlapConstraints) {
 			bw.write("\tWITH OVERLAP CONSTRAINTS:");
 		} else {
