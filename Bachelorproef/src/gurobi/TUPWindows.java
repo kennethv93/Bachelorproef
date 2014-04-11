@@ -35,12 +35,13 @@ public class TUPWindows {
 	static double totalexectime;
 	static boolean relaxed = false;
 	static DecimalFormat df = new DecimalFormat("#0.000");
+	static boolean optimized = false;
 	
 	/**
 	 * Oplossen via decompositie
 	 */
 	public static ArrayList<ArrayList<int[]>> getTableSolDecomp(String dataset, int d1, int d2, 
-			int windowsize, boolean overlapConstraints, int pen) throws IOException, GRBException {
+			int windowsize, boolean overlapConstraints, int pen,boolean localBranching, int k, int LBTimeLimit) throws IOException, GRBException {
 		penalty = pen;
 		withOverlapConstraints = overlapConstraints;
 		totalexectime = 0;
@@ -52,7 +53,28 @@ public class TUPWindows {
 			printSolution(getSolution(n,sol,bounds.get(i),bounds.get(i+1)));
 			soltable = concatSolutions(soltable,getSolution(n,sol,bounds.get(i),bounds.get(i+1)));
 		}
-		return soltable;
+		
+		int cost = getCost(n, soltable);
+		int kparam = k;
+		ArrayList<ArrayList<int[]>> bestsoltable = soltable;
+		ArrayList<ArrayList<int[]>> lbsoltable = new ArrayList<ArrayList<int[]>>();
+		if(localBranching) {
+			while(true) {
+				c4 = true;
+				lbsoltable = LocalBranching.execute(dist, opp, bestsoltable, d1, d2,k,LBTimeLimit);
+				if(getCost(n,lbsoltable) < cost) {
+					bestsoltable = lbsoltable;
+					cost = getCost(n,lbsoltable);
+					optimized = true;
+				} else if(kparam < 2){
+					break;
+				} else {
+					break;
+				}
+			}
+		}
+		c4 = false;
+		return bestsoltable;
 	}
 
 	/**
@@ -659,6 +681,10 @@ public class TUPWindows {
 			relaxed = true;
 		}
 		bw.newLine();
+		if(optimized) {
+			bw.write("\tOPTIMIZED WITH LOCAL BRANCHING");
+			bw.newLine();
+		}
 		if(!relaxed) {
 			//bw.write("\t\tCost: "+cost); bw.newLine();
 			bw.write("\t\tCost: "+getCost(n,soltable));
