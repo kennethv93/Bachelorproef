@@ -14,7 +14,7 @@ public class TUPWindows {
 	static boolean printSol = true;
 	static boolean printVars = false;
 	static boolean printToConsole = true;
-	static double timeLimit = 1080; // in seconden
+	static double timeLimit = 3600; // in seconden
 	static int penalty;
 	
 	// CONSTRAINTS
@@ -40,34 +40,43 @@ public class TUPWindows {
 	/**
 	 * Oplossen via decompositie
 	 */
-	public static ArrayList<ArrayList<int[]>> getTableSolDecomp(String dataset, int d1, int d2, 
+	public static ArrayList<ArrayList<int[]>> getTableSolDecomp(String dataset, int n1, int n2, 
 			int windowsize, boolean overlapConstraints, int pen,boolean localBranching, int k, int LBTimeLimit) throws IOException, GRBException {
 		penalty = pen;
 		withOverlapConstraints = overlapConstraints;
 		totalexectime = 0;
+		
+		// Data inlezen
+		Datareader dr = new Datareader();
+		dr.getData("C:\\Users\\Kenneth\\Dropbox\\School\\bachelorproef\\datasets\\umps"+dataset+".txt");
+		dist = dr.getDist();
+		opp = dr.getOpp();
+		
 		double[][][] sol = null;
 		ArrayList<ArrayList<int[]>> soltable = new ArrayList<ArrayList<int[]>>();
 		ArrayList<Integer> bounds = getBounds(parseIntDataset(dataset)*2-2,windowsize);
 		for(int i = 0; i<bounds.size()-1;i++) {
-			sol = execute(dataset,d1,d2,bounds.get(i),bounds.get(i+1),sol);
+			sol = execute(dataset,n1,n2,bounds.get(i),bounds.get(i+1),sol);
 			printSolution(getSolution(n,sol,bounds.get(i),bounds.get(i+1)));
 			soltable = concatSolutions(soltable,getSolution(n,sol,bounds.get(i),bounds.get(i+1)));
 		}
 		
+		// OPLOSSING INLEZEN
+//		ArrayList<ArrayList<int[]>> soltable = Solutionreader.getSolTable("C:\\Users\\Kenneth\\Dropbox\\School\\"
+//				+ "bachelorproef\\readysols\\sol"+dataset+".txt");
+		
+		//LOCAL BRANCHING
 		int cost = getCost(n, soltable);
-		int kparam = k;
 		ArrayList<ArrayList<int[]>> bestsoltable = soltable;
-		ArrayList<ArrayList<int[]>> lbsoltable = new ArrayList<ArrayList<int[]>>();
+		ArrayList<ArrayList<int[]>> lbsoltable;
 		if(localBranching) {
 			while(true) {
 				c4 = true;
-				lbsoltable = LocalBranching.execute(dist, opp, bestsoltable, d1, d2,k,LBTimeLimit);
+				lbsoltable = LocalBranching.execute(dist, opp, bestsoltable, n1, n2,k,LBTimeLimit);
 				if(getCost(n,lbsoltable) < cost) {
 					bestsoltable = lbsoltable;
 					cost = getCost(n,lbsoltable);
 					optimized = true;
-				} else if(kparam < 2){
-					break;
 				} else {
 					break;
 				}
@@ -148,16 +157,11 @@ public class TUPWindows {
 	/**
 	 * EXECUTE METHODE
 	 */
-	public static double[][][] execute(String dataset,double d1,double d2,int begin,int end,double[][][] prevSol) throws IOException {
+	public static double[][][] execute(String dataset,double p1,double p2,int begin,int end,double[][][] prevSol) throws IOException {
 		
 		System.out.println("Dataset: "+dataset);
 		double[][][] XCurrSol = null;
 		try {		
-			// Data inlezen
-			Datareader dr = new Datareader();
-			dr.getData("C:\\Users\\Kenneth\\Dropbox\\School\\bachelorproef\\datasets\\umps"+dataset+".txt");
-			dist = dr.getDist();
-			opp = dr.getOpp();
 			
 			n = dist.length/2;
 			double amountTeams = opp[0].length;
@@ -169,8 +173,8 @@ public class TUPWindows {
 			System.out.println("end: "+end);
 						
 			// Parameters
-			double n1 = n-d1-1;
-			double n2 = Math.floor(n/2)-d2-1;
+			double n1 = p1-1;
+			double n2 = p2-1;
 			
 			// Environment
 			GRBEnv env = new GRBEnv();
@@ -181,7 +185,7 @@ public class TUPWindows {
 			GRBModel model = sol.getModel();
 			 
 			//model.set(GRB.IntAttr.ModelSense, 1);
-			addConstraints(sol,opp,n,amountTeams,amountSlots,begin,end,d1,d2,n1,n2);
+			addConstraints(sol,opp,n,amountTeams,amountSlots,begin,end,p1,p2,n1,n2);
 			
 			// Cuts
 			if(begin != 0) {
@@ -699,7 +703,7 @@ public class TUPWindows {
 							writeTable(bw,soltable);
 						} catch (ConstraintException c) {
 							bw.write("\t\t\t"+c.toString().toUpperCase()); bw.newLine();
-							writeTable(bw,soltable);
+							//writeTable(bw,soltable);
 						}
 						bw.newLine();
 		}

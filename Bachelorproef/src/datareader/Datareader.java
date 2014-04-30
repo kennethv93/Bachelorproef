@@ -73,7 +73,7 @@ public class Datareader {
 					opp[i][j] = Integer.parseInt(numbers[j]);
 				}
 			}
-				
+			br.close();	
 		} catch(FileNotFoundException e) {
 			System.out.println("Bestand niet gevonden.");
 		}

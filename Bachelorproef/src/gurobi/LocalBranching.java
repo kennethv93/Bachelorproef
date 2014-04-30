@@ -7,6 +7,7 @@ public class LocalBranching {
 	public static ArrayList<ArrayList<int[]>> execute(int[][] dist, int[][] opp, ArrayList<ArrayList<int[]>> soltable,
 			int d1, int d2, int k, int LBTimeLimit) throws GRBException {
 		System.out.println("EXECUTING LOCAL BRANCHING");
+		
 		int begin = 0;
 		int end = soltable.get(0).size()-1;
 		int n = soltable.size();
@@ -27,11 +28,10 @@ public class LocalBranching {
 		// Environment
 		GRBEnv env = new GRBEnv();
 		if(LBTimeLimit != -1) env.set(GRB.DoubleParam.TimeLimit, LBTimeLimit);
-		
+
 		Solution sol = TUPWindows.initialize(env,dist,n,amountTeams,amountSlots,begin,end,null);
 		GRBModel model = sol.getModel();
-		 
-		//model.set(GRB.IntAttr.ModelSense, 1);
+
 		TUPWindows.addConstraints(sol,opp,n,amountTeams,amountSlots,begin,end,d1,d2,n1,n2);	
 		
 		// NEIGHBORHOOD CONSTRAINT

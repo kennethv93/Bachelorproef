@@ -10,11 +10,11 @@ import java.util.List;
 
 public class SolutionChecker {
 	
-	public static void check(ArrayList<ArrayList<int[]>> sol, int d1, int d2) throws ConstraintException {
+	public static void check(ArrayList<ArrayList<int[]>> sol, int p1, int p2) throws ConstraintException {
 		
 		int nbUmp = sol.size();
-		int p1 = nbUmp - d1;
-		int p2 = (int) (Math.floor(nbUmp/2) - d2);
+//		int p1 = nbUmp - d1;
+//		int p2 = (int) (Math.floor(nbUmp/2) - d2);
 		
 		// maak array met teams
 		int nbTeams = nbUmp*2;
